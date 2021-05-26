@@ -495,9 +495,9 @@ filter(flights, arr_delay <= 120, dep_delay <= 120)
  gitcreds::gitcreds_set()
  use_git()
  use_github()
- create_from_github("ilianauib/biomass")
+ create_from_github("ilianauib/bio302")
  
  library(usethis)
  create_from_github("kingsleyshacklebolt/dragon_study", fork = TRUE)
-############3
+############
 

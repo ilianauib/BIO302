@@ -1,7 +1,5 @@
 # installed with tidyverse, but NOT loaded with library(tidyverse)
 library(readxl) 
-library(dplyr)
-library(ggpubr)
 library(tidyverse)
 
 # import data
