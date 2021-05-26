@@ -1,0 +1,48 @@
+---
+title: "MTGONGA"
+author: "Iliana"
+date: "5/26/2021"
+output: html_document
+---
+
+## Load libraries
+
+```{r, message=FALSE }
+library(readxl) 
+library(tidyverse)
+```
+
+## Import the *data*
+
+```{r, warning=FALSE }
+# 1st way: import using path (useful when there are many sheets)
+biomass.df <- excel_sheets(path = "biomass2015.xls") %>% 
+              map_dfr(~read_excel(path = "biomass2015.xls", sheet =.x))
+
+# 2nd way: import each desired sheet
+biomass <- "biomass2015.xls"
+excel_sheets(path = biomass)# find the names of the excel sheets
+biomass_L <- read_excel(path = biomass, sheet = "Site L")
+biomass_M <- read_excel(path = biomass, sheet = "Site M")
+biomass_A <- read_excel(path = biomass, sheet = "Site A")
+biomass_H <- read_excel(path = biomass, sheet = "Site H")
+```
+
+## Find the mean **biomass** per **site**
+
+```{r, message=FALSE }
+biomass.df <- biomass.df %>%
+              select(c(site, plot, production)) %>%
+              dplyr::mutate(site = factor(site, levels = c("L", "M", "A", "H"))) %>%
+              group_by(site, plot) %>% 
+              summarise(Biomass = sum(production, na.rm = T))
+```
+
+## Make a [boxplot]{.ul}
+
+```{r }
+pb <- ggplot(biomass.df, aes( x= site, y=Biomass, colour=site))+
+      geom_boxplot()+
+      theme_bw()
+pb
+```
