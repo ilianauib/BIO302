@@ -1,0 +1,133 @@
+---
+title: "PRACTICAL IN EXPLORATORY ANALYSIS"
+author: "Iliana Vasiliki Ntinou"
+date: "5/26/2021"
+output: html_document
+---
+
+# Practice in exploratory analysis
+## Load libraries
+
+```{r,message=FALSE}
+library(tidyverse)
+```
+
+## Install and load the palmerpenguins package and see the penguins data
+
+```{r}
+#instal the package with: install.packages("palmerpenguins")
+data("penguins", package="palmerpenguins")
+penguins
+#drop the NA values
+na.omit(penguins)
+```
+
+## Find the range, mean, median and variance of variable bill_length_mm
+
+```{r}
+#it will show, minimum, maximum, median and mean
+summary(penguins$bill_length_mm, na.rm=TRUE)
+#it will show variance
+var(penguins$bill_length_mm, na.rm=TRUE)
+
+```
+
+## Find the standard error of the mean of bill_length_mm
+
+```{r}
+#install package plotrix if not installed: install.packages("plotrix")
+#load library
+library(plotrix)
+std.error(penguins$bill_length_mm, na.rm=TRUE)
+```
+
+## Plot a histogram of the variable bill_length_mm showing mean and median
+
+```{r}
+p1 <- ggplot(penguins, aes(bill_length_mm)) + 
+      geom_histogram(col="black", fill="green")+  #modify the colors
+#add mean      
+      geom_vline(aes(xintercept = mean(bill_length_mm, na.rm=TRUE), ), color="blue") + 
+#add median      
+      geom_vline(aes(xintercept = median(bill_length_mm, na.rm=TRUE), ), color="red")+ 
+      theme_bw()+  #choose a friendly theme
+      labs(title="Histogram for Bill length", x="Bill length in mm", y="Frequency") #add labels
+p1
+```
+
+## Plot bill_length_mm against bill_depth_mm
+
+```{r}
+p2 <- ggplot(penguins, aes(x=bill_length_mm, y=bill_depth_mm ))+
+      geom_jitter()+
+      theme_bw()+
+      labs(x="Bill length in mm", y="Bill depth in mm") 
+p2
+```
+
+## Find the covariance and correlation of bill_length_mm against bill_depth_mm
+
+```{r}
+#covariance
+cov(penguins$bill_length_mm, penguins$bill_depth_mm, use="pairwise.complete.obs")
+#correlation
+cor(penguins$bill_length_mm, penguins$bill_depth_mm, use="pairwise.complete.obs")
+#test if the correlation is significant
+cor.test(x=penguins$bill_length_mm, y=penguins$bill_depth_mm, use="pairwise.complete.obs")
+```
+
+
+## Plot bill_length_mm against bill_depth_mm, coloured by species
+
+```{r}
+p3 <- ggplot(penguins, aes(x=bill_length_mm, y=bill_depth_mm, colour=species))+
+      geom_jitter()+
+      theme_bw()+
+      labs(x="Bill length in mm", y="Bill depth in mm")
+p3
+```
+
+## Find out if the correlation between bill_length_mm against bill_depth_mm is significant for any of the species
+
+```{r}
+penguinsA <- filter(penguins, species=="Adelie")
+cor.test(x=penguinsA$bill_length_mm, y=penguinsA$bill_depth_mm, use="pairwise.complete.obs")
+penguinsC <- filter(penguins, species=="Chinstrap")
+cor.test(x=penguinsC$bill_length_mm, y=penguinsC$bill_depth_mm, use="pairwise.complete.obs")
+penguinsG <- filter(penguins, species=="Gentoo")
+cor.test(x=penguinsG$bill_length_mm, y=penguinsG$bill_depth_mm, use="pairwise.complete.obs")
+```
+
+This is a *subgroup analysis* which includes some **dangers**... 
+One of the problems with subgroup analysis is that it is highly likely to get a statistically significant false result, meaning the more groups one includes in their analysis the higher the chance to find a statistically significant effect. 
+Sometimes it all comes down to the group size that is being investigated, meaning that there may be simply needed a larger group size to detect an effect if there is one.
+ 
+# Extra Practice
+
+## Install the datasauRus package and load it with library.
+
+```{r, message=FALSE}
+#instal the package with: install.packages("datasauRus")
+library(datasauRus)
+```
+
+## Dataset datasaurus_dozen has x and y variables and a dataset name.
+
+```{r, }
+data("datasaurus_dozen", package="datasauRus")
+datasaurus_dozen
+#simple plot
+pdd<- ggplot(datasaurus_dozen, aes(x=x, y=y, colour=dataset))+
+      geom_point()+
+     facet_wrap(~dataset)
+pdd
+```
+
+## Calculate the mean and standard deviation of x and y and the correlationn between x and y, for each dataset.
+
+```{r}
+datasaurus_dozen %>% group_by(dataset) %>% 
+                     summarise(meanx = mean(x), standarddeviationx = sd(x),
+                               meany = mean(y), standarddeviationy = sd(y),
+                               COR=cor(x,y))
+```
