@@ -66,7 +66,7 @@ The model is yi = β0 + β1xi + εi
 A fast way to do it is by looking the output of ANOVA
 ```{r}
 #in this case  it is y=(2.690e+01) + (4.051e-03)x
-sum((penguins$bill_length_mm - (penguins$body_mass_g*0.004051 +26.9))^2)
+sum((penguins$bill_length_mm - (penguins$body_mass_g*(coef(fit.lm)[2]) + (coef(fit.lm)[1])))^2)
 
 
 #yi = β0 : The null model is basically true when the null hypothesis is true

@@ -1,0 +1,13 @@
+---
+title: "Power Tests"
+author: "Iliana Vasiliki Ntinou"
+date: "5/28/2021"
+output: html_document
+---
+
+### Load libraries
+
+```{r,message=FALSE}
+library(tidyverse)
+library(lme4)
+```
