@@ -123,15 +123,19 @@ General interpretation: The changes in bill length with changes in bodymass depe
 ```{r}
 #In that case the interpretation of the model would be: The slope of the continuous predictor (body mass), depends on the levels of the categorical predictor (species).
 fits.lm <-lm(bill_length_mm~body_mass_g*species, data=penguins) 
-anova(fits.lm) 
-
-# the interaction term is not significant (p-0.1826) so we remove it following the backward elimination technique
+anova(fits.lm) # the interaction term is not significant (p-0.1826) so we remove it following the backward elimination technique
 
 fits1.lm <- lm(bill_length_mm~body_mass_g + species, data=penguins)
 anova(fits1.lm)
 summary(fits1.lm)
 
-anova(fits.lm, fits1.lm, test="F")
+fits2.lm <- lm(bill_length_mm~species, data=penguins)
+anova(fits2.lm)
+
+fit.lm <- lm(bill_length_mm~body_mass_g, data=penguins)
+anova(fit.lm)
+
+anova(fits.lm, fits1.lm, fits2.lm, fit.lm, test="F")
 
 ```
 
