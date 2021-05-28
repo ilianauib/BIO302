@@ -3,6 +3,7 @@ title: "Power Tests"
 author: "Iliana Vasiliki Ntinou"
 date: "5/28/2021"
 output: html_document
+runtime: shiny
 ---
 
 ### Load libraries
@@ -86,6 +87,7 @@ p <- runs  %>%
   geom_point()
 p
 ```
+
 *Run the simulation for different numbers of fish. How many are needed to get enough power?*
 ```{r}
 
