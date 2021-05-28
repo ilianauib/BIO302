@@ -33,20 +33,32 @@ plot(penguins$body_mass_g, penguins$bill_length_mm)
 lines(penguins$body_mass_g, fitted(fit.lm), col="red")
 ```
 The coefficients can be written in a mathematical equation as:
+
 y=(2.690e+01) + (4.051e-03)x 
+
 2.690e+01 is the mean of the intercept and 4.051e-03 is the slope.
 
 ### Examine the diagnostics plots. Is everything OK?
+
 Diagnostic plots focus on residuals of the model.
+
 There are 4 questions we shoud be asking ourselves to see if everything is ok by looking at the diagmnostics plots
+
 *1) Residuals vs Fitted values : Non-linear patterns?* 
+
 The red line and points should not show a clear pattern.
+
 *2) Normal Q-Q plot: Normal distribution of residuals?*
+
 The data points should follow the straight dashed line.
 There will always be some deviations but they should not deviate severely.
+
 *3) Scale Location: Constant variance?*
+
 You should see a fairly horizontal line with randomly spread points.
+
 *4) Residuals vs Leverage: Influential outliers?*
+
 If you have points placed outside the dashed lines, they have high Cook's distance. 
 This means that they are influential outliers.
 Removing them will change the results of the regression.
@@ -57,12 +69,19 @@ plot(fit.lm)
 So the answer in this case is that everything looks ok!
 
 ### Calculate the residual sum of squares (find sum of the squared difference between the estimates calculated from the coefficients and the observed values).
+
 The mathematical explanation would be:
+
 The model is yi = β0 + β1xi + εi 
+
        where εi = error (residuals= actual - predicted)
+
 ●*Σεi^2*= Σ(yi - (β0 + β1xi))^2
+
        where β1 = sxy / sx^2 = covar(xy)/var(x), 
+
              β0 = mean(y) - β1mean(x)
+
 A fast way to do it is by looking the output of ANOVA
 ```{r}
 #in this case  it is y=(2.690e+01) + (4.051e-03)x
@@ -99,7 +118,8 @@ slope
 The intercept from the model is 4.051e-03 which is almost equal to the result we calculated
 
 ### Adding species to the model as a predictor, does it improve the model and how should the coefficients be interpreted?
- General interpretation: The changes in bill length with changes in bodymass depends on the species, or vice versa.
+
+General interpretation: The changes in bill length with changes in bodymass depends on the species, or vice versa.
 ```{r}
 #In that case the interpretation of the model would be: The slope of the continuous predictor (body mass), depends on the levels of the categorical predictor (species).
 fits.lm <-lm(bill_length_mm~body_mass_g*species, data=penguins) 
@@ -114,9 +134,15 @@ summary(fits1.lm)
 anova(fits.lm, fits1.lm, test="F")
 
 ```
+
 The coefficients from the summary output can be interpreted as:
+
 Intercept: Mean bill length for Adelie species when bodymass=0.
+
 body_mass_g: The slope of the line for Adelie species.
+
 Tomatoresistant: The difference in intercept (mean at Nitrogen=0)
+
 speciesChinstrap: The difference in intercept (mean at bodymass=0)for Chinstrap species compared to Adelie.
+
 speciesGentoo: : The difference in intercept (mean at bodymass=0)for Gentoo species compared to Adelie.
