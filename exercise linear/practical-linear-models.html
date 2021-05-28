@@ -314,7 +314,7 @@ slope</code></pre>
 <p>General interpretation: The changes in bill length with changes in bodymass depends on the species, or vice versa.</p>
 <pre class="r"><code>#In that case the interpretation of the model would be: The slope of the continuous predictor (body mass), depends on the levels of the categorical predictor (species).
 fits.lm &lt;-lm(bill_length_mm~body_mass_g*species, data=penguins) 
-anova(fits.lm) </code></pre>
+anova(fits.lm) # the interaction term is not significant (p-0.1826) so we remove it following the backward elimination technique</code></pre>
 <pre><code>## Analysis of Variance Table
 ## 
 ## Response: bill_length_mm
@@ -325,9 +325,7 @@ anova(fits.lm) </code></pre>
 ## Residuals           327 1905.8     5.8                    
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
-<pre class="r"><code># the interaction term is not significant (p-0.1826) so we remove it following the backward elimination technique
-
-fits1.lm &lt;- lm(bill_length_mm~body_mass_g + species, data=penguins)
+<pre class="r"><code>fits1.lm &lt;- lm(bill_length_mm~body_mass_g + species, data=penguins)
 anova(fits1.lm)</code></pre>
 <pre><code>## Analysis of Variance Table
 ## 
@@ -359,14 +357,40 @@ anova(fits1.lm)</code></pre>
 ## Residual standard error: 2.419 on 329 degrees of freedom
 ## Multiple R-squared:  0.806,  Adjusted R-squared:  0.8043 
 ## F-statistic: 455.8 on 3 and 329 DF,  p-value: &lt; 2.2e-16</code></pre>
-<pre class="r"><code>anova(fits.lm, fits1.lm, test=&quot;F&quot;)</code></pre>
+<pre class="r"><code>fits2.lm &lt;- lm(bill_length_mm~species, data=penguins)
+anova(fits2.lm)</code></pre>
+<pre><code>## Analysis of Variance Table
+## 
+## Response: bill_length_mm
+##            Df Sum Sq Mean Sq F value    Pr(&gt;F)    
+## species     2 7015.4  3507.7   397.3 &lt; 2.2e-16 ***
+## Residuals 330 2913.5     8.8                      
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>fit.lm &lt;- lm(bill_length_mm~body_mass_g, data=penguins)
+anova(fit.lm)</code></pre>
+<pre><code>## Analysis of Variance Table
+## 
+## Response: bill_length_mm
+##              Df Sum Sq Mean Sq F value    Pr(&gt;F)    
+## body_mass_g   1 3449.8  3449.8  176.24 &lt; 2.2e-16 ***
+## Residuals   331 6479.1    19.6                      
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>anova(fits.lm, fits1.lm, fits2.lm, fit.lm, test=&quot;F&quot;)</code></pre>
 <pre><code>## Analysis of Variance Table
 ## 
 ## Model 1: bill_length_mm ~ body_mass_g * species
 ## Model 2: bill_length_mm ~ body_mass_g + species
-##   Res.Df    RSS Df Sum of Sq      F Pr(&gt;F)
-## 1    327 1905.8                           
-## 2    329 1925.7 -2   -19.924 1.7093 0.1826</code></pre>
+## Model 3: bill_length_mm ~ species
+## Model 4: bill_length_mm ~ body_mass_g
+##   Res.Df    RSS Df Sum of Sq        F Pr(&gt;F)    
+## 1    327 1905.8                                 
+## 2    329 1925.7 -2     -19.9   1.7093 0.1826    
+## 3    330 2913.5 -1    -987.8 169.4828 &lt;2e-16 ***
+## 4    331 6479.1 -1   -3565.6 611.7793 &lt;2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
 <p>The coefficients from the summary output can be interpreted as:</p>
 <p>Intercept: Mean bill length for Adelie species when bodymass=0.</p>
 <p>body_mass_g: The slope of the line for Adelie species.</p>
