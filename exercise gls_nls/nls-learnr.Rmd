@@ -7,7 +7,7 @@ output:
     progressive: true
     allow_skip: true
 description: "Non-linear least-squares with nlme"
-runtime: shinyrmd
+runtime: shiny_prerendered
 ---
 
 ```{r setup, include=FALSE}
@@ -325,7 +325,7 @@ It is $y = \beta_0 + (\beta_1 - \beta_0)e^{-e^{\beta_3}x}$
 
 
 The function `SSasymp` takes four arguments. The first is the predictor variable, the other three are the names of the coefficients (without quotes). 
-It is convensional to use `Asym` for the asymptote, `RO` for the intercept and `lrc` for the effect.
+It is conventional to use `Asym` for the asymptote, `RO` for the intercept and `lrc` for the effect.
 
 ```{r}
 mod_nls2 <- nls(Weight ~ SSasymp(Days, Asym, R0, lrc), data = wtloss)
