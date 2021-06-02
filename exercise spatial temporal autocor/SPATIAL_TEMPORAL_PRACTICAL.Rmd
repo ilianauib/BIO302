@@ -70,6 +70,21 @@ map_dfr(glance) %>%
   ggplot(aes(x = p.value)) +
   geom_histogram()
 
+# Rerun x1000 with lm1 
+rerun(1000, # how many reruns we want 
+      {# THE SIMULATION WE WANT OT RERUN: 
+ts.sim<-arima.sim(list(order=c(1,0,0), ar=0.5), n=100) 
+time <- c(1:100)
+# THE FUNCTION WE WANT TO RERUN:
+gls(ts.sim ~ time, #         same as in lm1, y = simulation, x = time
+             corr = corAR1()) #     with 1st order  
+}) %>% # piping it into glance to get an overview (i think)
+map_dfr(glance) %>% # piping it directly into ggplot 
+  ggplot(aes(x = p.value)) + 
+  geom_histogram() + # and making a histogram
+  theme_bw(base_size = 16)
+  
+# Histogram should be flat, it's not, I'll rerun with different model (gls)
 ```
 
 ## Real data
