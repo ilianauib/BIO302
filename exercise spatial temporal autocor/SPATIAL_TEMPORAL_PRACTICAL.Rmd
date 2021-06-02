@@ -1,0 +1,120 @@
+---
+title: "Spatial & Temporal structure"
+author: "Iliana Vasiliki Ntinou"
+date: "6/2/2021"
+output: html_document
+---
+
+## Simulation
+1) Simulate a 100-observation autocorrelated timeseries with `arima.sim`, with a first order autoregressive coefficient of 0.5. Also make a time vector of `1:100`
+
+```{r, message=FALSE }
+#Load libraries
+library(nlme) 
+library(tidyverse)
+library(lmtest)
+library(broom.mixed)
+```
+```{r}
+ts.sim<-arima.sim(list(order=c(1,0,0)#specifying that this is an AR1 model 1st order
+                       , ar=0.5),#autoregressive coefficient
+                  n=100) #number of obs
+time <- c(1:100)
+```
+
+2) Plot the data. 
+
+```{r}
+ts.plot(ts.sim)
+```
+
+
+3) Regress the timeseries against time with an OLS model. Does the model appear to be statistically significant?
+
+```{r}
+lm.0 <- lm(ts.sim~time(ts.sim))
+lm.0
+anova(lm.0)
+
+```
+
+
+4) Plot the model diagnostics, including an `acf` and `pacf` of the residuals.
+```{r}
+acf(resid(lm.0))
+pacf(resid(lm.0))
+```
+
+5) Use the Durbin-Watson test to test the residuals for autocorrelation.
+```{r}
+dwtest(lm.0)
+```
+
+6) Fit a gls with an appropriate correlation structure. Is this a better model? How have the p-value and effect size changed?
+```{r}
+gls.0 <- gls(ts.sim~time(ts.sim))
+summary(gls.0)
+gls.00 <- gls(ts.sim~time(ts.sim), corr=corAR1())
+summary(gls.00)
+anova(gls.0, gls.00)
+
+```
+
+7) Repeat the above 1000 times and find how autocorrelation affects the distribution of the p-value and the effect size.
+
+```{r}
+rerun(1000, {ts.sim<-arima.sim(list(order=c(1,0,0), ar=0.5), n=100) 
+time <- c(1:100)
+lm.0 <- lm(ts.sim~time(ts.sim))})%>% 
+map_dfr(glance) %>% 
+  ggplot(aes(x = p.value)) +
+  geom_histogram()
+
+```
+
+## Real data
+
+1) The built-in dataset LakeHuron has annual lake level data from 1885 to 1972
+Load the data with the command data(LakeHuron)
+```{r}
+data(LakeHuron)
+summary(LakeHuron)
+```
+
+2) Plot the data.
+```{r}
+plot(LakeHuron)
+```
+
+3) Regress the LakeHuron lake level against year using a linear model. Is there a significant trend?
+```{r}
+mod1<-lm(LakeHuron~time(LakeHuron))
+summary(mod1)
+```
+
+4) Plot the autocorrelation and partial autocorrelation functions for the residuals from this regression. Interpret them.
+```{r}
+acf(resid(mod1))
+pacf(resid(mod1))
+```
+
+5) Fit an autoregressive models to the residuals. Compare the results with your interpretation of the PACF plot.
+```{r}
+year<-time(LakeHuron)
+fit.gls<-gls(LakeHuron~year)
+summary(fit.gls)
+```
+
+6) Fit a gls model using a corAR1 correlation structure. Test if the correlation structure is necessary. Is the trend significant? 
+```{r}
+fit2.gls<-gls(LakeHuron~year, corr=corAR1())
+summary(fit2.gls)
+anova(fit.gls,fit2.gls)
+```
+
+7) Fit a gls model using a corARMA correlation structure with two AR terms. Is this model an improvement?
+```{r}
+fit3.gls <- gls(LakeHuron~year, corr=corARMA(p=2,q=0))
+summary(fit3.gls)
+anova(fit.gls,fit2.gls, fit3.gls)
+```
