@@ -1,0 +1,52 @@
+---
+title: "Practical in mixed effect models"
+author: "Iliana Vasiliki Ntinou"
+date: "6/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+1) Import data LME.csv   
+id gives the group id, y is the response, ab and AB are predictors
+
+2) What is a random effect?
+
+3) What is a fixed effect?
+
+4) Fit an appropriate a model with y and AB
+
+5) Interpret the results
+
+6) Fit an appropriate a model with y and ab
+
+7) Interpret the results
+
+8) Include both AB and ab as predictors 
+
+9) What is the expected mean for the different levels of AB and ab?
+
+10) Use a linear model with AB and compare the results to question 4
+
+11) Use a linear model with ab and compare the results to question 6
+
+12) Import data length.csv   
+id is the individual id, day is the predictor, length is the response
+
+13) Find the best model to explain the data
+
+14) Use a simulation to test the performance of mixed effect models.  
+
+Simulate 10 groups of observations, 5 for each treatment AB, each with 10 individuals. There should be a group error from a normal distribution and an individual error from a normal distribution, and the effect of the predictor. Chose an effect size, individual error and group error that you might expect for your data.
+
+Test how changing the number of individuals within in each group and the number of groups (keeping the total number of observations constant) changes the power of the analysis (the probability of detecting the response).
+
+15) Repeat for an inner variable ab which varies within each group.
+
+16) Consider the implications for experimental design.
+
+
+
