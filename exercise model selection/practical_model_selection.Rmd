@@ -1,0 +1,44 @@
+---
+title: "Model Selection"
+author: "Richard J. Telford"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## hypothesis testing
+
+1. Import the palmerpenguin data
+
+2. Test the hypothesis that bill length differs between species.
+
+3. Test the hypothesis that bill length differs by sex in addition to species.
+
+4. How should the p-values be interpreted.
+
+## Exploratory model building 
+
+Normally you would be doing this on a separate data set
+
+5. Use forward selection to find the best model to explain bill length.
+
+6. Build a set of candidate models to explain bill depth using one or two predictors.  
+
+9. Extract the AIC from each  models (hint use function `AIC`). Which is the better model?
+
+10. Calculate the deltaAIC for each model.
+
+11. Calculate the AIC weights for each model. Interpret these weights.
+
+
+## Collinearity 
+
+12. Make a model predicting bill_length from all other variables. Find the VIF of each predictor. Are there any problem variables? `olsrr::ols_vif_tol`
+
+13. Use `GGally::ggpairs()` to plot the data to try to identify the cause of any high vif.
+
+
+14. Use `MASS::mvrnorm()` to simulate 100 observation of two predictor variables (x and z) with a given correlation. Simulate a response variable y = b0 + b1x + b2z. Test how the uncertainty in the coefficients changes with the correlation (and hence vif) of the predictor variables.
