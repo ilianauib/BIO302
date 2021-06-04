@@ -1,0 +1,149 @@
+---
+title: "Practical in model selection"
+author: "Iliana Vasiliki Ntinou"
+date: "6/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## hypothesis testing
+
+### Import the palmerpenguin data and load libraries
+```{r, message=FALSE}
+#instal the package with: install.packages("palmerpenguins")
+data("penguins", package="palmerpenguins")
+penguins
+#drop the NA values
+penguins <- na.omit(penguins)
+#libraries
+library(tidyverse)
+library(nlme)
+```
+
+
+### Test the hypothesis that bill length differs between species.
+
+```{r}
+lm1 <- lm(bill_length_mm ~ species, data = penguins)
+anova(lm1)
+penguins %>% 
+  ggplot(aes(x = species, y = bill_length_mm, fill = sex)) +
+  geom_boxplot()
+```
+
+
+### Test the hypothesis that bill length differs by sex in addition to species.How should the p-values be interpreted?
+
+```{r}
+lm1 <- lm(bill_length_mm ~ species, data = penguins)
+lm2 <- lm(bill_length_mm ~ species + sex, data = penguins)
+anova(lm1, lm2)
+```
+So we conclude from the p value that the second mdel with the sex is better. So bill length is also affected by the sex.
+
+## Exploratory model building 
+
+Normally you would be doing this on a separate data set
+
+### Use forward selection to find the best model to explain bill length.
+
+```{r, message=FALSE}
+library(MASS)
+mod <- lm(bill_length_mm ~.^2, data=penguins)
+summary(mod)
+model <- stepAIC(mod, k=2)
+```
+The model with the least AIC is 
+
+bill_length_mm ~ species + island + bill_depth_mm + flipper_length_mm + 
+    body_mass_g + sex + year + species:sex + island:bill_depth_mm + 
+    bill_depth_mm:sex + bill_depth_mm:year + flipper_length_mm:body_mass_g + 
+    flipper_length_mm:sex
+    
+    
+### Build a set of candidate models to explain bill depth using one or two predictors.  
+
+```{r}
+mods <- list()
+mods$m0 <- lm(bill_length_mm ~ 1, penguins)
+mods$m1 <- lm(bill_length_mm ~ species, penguins)
+mods$m2 <- lm(bill_length_mm ~ sex, penguins)
+mods$m3 <- lm(bill_length_mm ~ sex + species, penguins)
+mods$m4 <- lm(bill_length_mm ~ sex * species, penguins)
+
+```
+
+
+### Extract the AIC from each  models (hint use function `AIC`). Which is the better model?
+```{r}
+sapply(mods, AIC)
+
+# OR
+m0 <- lm(bill_length_mm ~ 1, penguins)
+m1 <- lm(bill_length_mm ~ species, penguins)
+m2 <- lm(bill_length_mm ~ sex, penguins)
+anova(m0,m1,m2)
+#model m1 has significant reduction of RSS
+m3 <- lm(bill_length_mm ~ sex + species, penguins)
+m4 <- lm(bill_length_mm ~ sex * species, penguins)
+anova(m3,m4)
+#the interaction term in m4 is not significant so we chosse m3
+```
+
+
+### Calculate the deltaAIC for each model and the AIC weights for each model. Interpret these weights.
+ΔAIC - difference between the best AIC and AIC of the other models. Best model has a ΔAIC of zero, highest values for worst models
+
+AIC weights exp(−0.5∗ΔAIC)∑exp(−0.5∗ΔAIC)
+AIC weights – probability model is best of those tested
+```{r}
+library("AICcmodavg")
+aictab(mods)
+```
+
+
+## Collinearity 
+
+### Make a model predicting bill_length from all other variables. Find the VIF of each predictor. Are there any problem variables? 
+```{r}
+model1 <- lm(bill_length_mm ~., data = penguins)
+library(olsrr)
+olsrr::ols_vif_tol(model1)
+```
+Variance Inflation Factor
+Measure of how much variance of the regression coefficient is “inflated” by correlation among the predictor variables
+
+*1 is no correlation.*
+
+*Values above 10 maybe a cause for concern.*
+
+*Some argue for a VIF threshold of 3.*
+
+### Use `GGally::ggpairs()` to plot the data to try to identify the cause of any high vif.
+
+
+```{r, message=FALSE}
+model1 <- lm(bill_length_mm ~., data = penguins)
+library(GGally)
+GGally::ggpairs(penguins)
+``` 
+
+### Use `MASS::mvrnorm()` to simulate 100 observation of two predictor variables (x and z) with a given correlation. Simulate a response variable y = b0 + b1x + b2z. Test how the uncertainty in the coefficients changes with the correlation (and hence vif) of the predictor variables.
+
+```{r}
+# data info
+
+Sigma = matrix(c(1, 0.9, 0.9, 1), 2, 2)
+Sigma
+a <- mvrnorm(n = 100, mu=c(1,1), Sigma) %>% as.data.frame() %>% mutate(y= V1 +V2 +rnorm(100))
+a
+plot(a)
+moda <- lm(y~., data=a)
+olsrr::ols_vif_tol(moda)
+
+
+```
+
