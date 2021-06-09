@@ -1,0 +1,95 @@
+---
+title: "BIO302 Exam 2021"
+author: "Iliana Vasiliki Ntinou"
+date: "6/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Answers
+
+### 1) Discuss the advantages and challenges of pre-registering an experiment. 
+
+### 2) Discuss the steps you plan to use to make your thesis reproducible.
+
+### 3) A statistical test has a p-value of 0.04. How should this p-value be interpreted? Is it good evidence against the null hypothesis?
+
+### 4) A graduate student got this advice from their supervisor: “Just make a giant correlation matrix and see what is interesting”. Discuss the potential problems with this approach and how they could be resolved.
+
+### 5) Explain what autocorrelation is, how it can be detected and how its effect on regression can be controlled for.
+
+### 6) Model the relationship between total plant biomass in alpine grasslands and summer air temperature in China. Available data are biomass per species per plot. There are ~15 plots in each of four sites. Each site is at a different elevation and has a climate logger.  
+
+- Climate data can be downloaded from https://osf.io/34qnr/. Biomass data can be downloaded from https://osf.io/6sfqw/.
+```{r, message=FALSE}
+# 1st step is to load libraries
+library(readxl) 
+library(tidyverse)
+```
+```{r, warning=FALSE, message=FALSE}
+# 2nd step is to import the data. The climate data are in csv format and the biomass are in excel format. We must not forget to import all the excel sheets that include data.
+climate.df <- list.files(pattern = "*.csv") %>% 
+                map_dfr(~read_csv(.))
+
+biomass.df <- excel_sheets(path = "biomass2015.xls") %>% 
+              map_dfr(~read_excel(path = "biomass2015.xls", sheet =.x))
+# 3rd step is optional but it is just to check if the data were imported correctly by looking at the first six rows of each dataframe
+head(climate.df)
+head(biomass.df)
+```
+
+- Calculate mean summer air temperatures each site. Use the logger "gradient". The OTC logger is part of another experiment. 
+```{r}
+library("lubridate") # to convert the dates
+climate <- climate.df %>% 
+              mutate(date= ymd(month)) %>% # convert the date so it is easier to choose the summer months
+              mutate(site = factor(site, levels = c("L", "M", "A", "H"))) %>% # set sites as factors
+              filter(month(date)>05, month(date)<09, logger=="gradient") %>% # we need to filter the data to include only summer months and logger to use only gradient
+              group_by(site) %>% # group the values by site 
+              summarise(meansummertemp=mean(value, na.rm=T)) #calculate the mean temperature
+```
+
+
+- Calculate biomass per plot.
+```{r, message=FALSE}
+biomass <- biomass.df %>%
+              select(c(site, plot, production)) %>% #choose columns we are interested in
+              mutate(site = factor(site, levels = c("L", "M", "A", "H"))) %>% # set sites as factors
+              group_by(site, plot) %>% 
+              summarise(biomass = sum(production, na.rm = T))# calculate total biomass per plot
+```
+
+
+- Join the climate data to the biomass data.
+```{r}
+bc.df <- left_join(biomass,climate, by="site") #take all rows from biomass and matching rows from climate.
+```
+
+
+- Choose and fit a suitable model to find the relation a biomass and mean summer temperature. 
+```{r, message=FALSE}
+library(nlme)
+fit.lme <- lme(biomass~meansummertemp, random=~plot|site, data=bc.df)
+```
+
+
+- Check the model's assumptions are met.
+```{r}
+
+```
+
+
+- Report key statistics from your model in a table or in the text.
+
+- Make a publication quality plot that shows the relationship between biomass and mean summer temperature.
+```{r}
+
+```
+
+
+- Write the statistical part of the methods and results sections of a manuscript describing the biomass-climate relationship. You should justify your choice of model.
+
+- Write a biological interpretation of your final model.					
