@@ -11,24 +11,31 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Answers
 
-### 1) Discuss the advantages and challenges of pre-registering an experiment. 
+### 1) Discuss the advantages and challenges of pre-registering an experiment.
 
 ### 2) Discuss the steps you plan to use to make your thesis reproducible.
 
 ### 3) A statistical test has a p-value of 0.04. How should this p-value be interpreted? Is it good evidence against the null hypothesis?
 
-### 4) A graduate student got this advice from their supervisor: “Just make a giant correlation matrix and see what is interesting”. Discuss the potential problems with this approach and how they could be resolved.
+### 4) A graduate student got this advice from their supervisor: "Just make a giant correlation matrix and see what is interesting". Discuss the potential problems with this approach and how they could be resolved.
+
+
+One problem has to do with multiple testing. Since we have a giant correlation matrix, the number of tests that are going to be done in order to find significant results is also going to be very big. Therefore, we might end up with significant results that don't correspond to real significant result but were found by chance
+One possible solution is to do multiple testing correction, like bonferroni correction or fdr control (βάλε τι έχετε κάνει)
+https://l.facebook.com/l.php?u=https%3A%2F%2Fstats.stackexchange.com%2Fquestions%2F90023%2Fmultiple-comparisons-for-correlation-matrix%3Ffbclid%3DIwAR2A0vBFMWQ49x8YWBduEDOSbzPaJlewtpbmbbopMI4vfPOPQD1RMxzE6Aw&h=AT0Y6afz7pQbdbhtFiy_pFhero_W7hdE-9LscajYMg_wqgZkzvBUONMb-Pc4VFguAw_g3etj3kUbj4j-wA_tL1RX42Bmk8NA893CKUJWO-DZNaOyEJdgJ8WeD5MICmOszzb7sg
 
 ### 5) Explain what autocorrelation is, how it can be detected and how its effect on regression can be controlled for.
 
-### 6) Model the relationship between total plant biomass in alpine grasslands and summer air temperature in China. Available data are biomass per species per plot. There are ~15 plots in each of four sites. Each site is at a different elevation and has a climate logger.  
+### 6) Model the relationship between total plant biomass in alpine grasslands and summer air temperature in China. Available data are biomass per species per plot. There are \~15 plots in each of four sites. Each site is at a different elevation and has a climate logger.
 
-- Climate data can be downloaded from https://osf.io/34qnr/. Biomass data can be downloaded from https://osf.io/6sfqw/.
+-   Climate data can be downloaded from <https://osf.io/34qnr/>. Biomass data can be downloaded from <https://osf.io/6sfqw/>.
+
 ```{r, message=FALSE}
 # 1st step is to load libraries
 library(readxl) 
 library(tidyverse)
 ```
+
 ```{r, warning=FALSE, message=FALSE}
 # 2nd step is to import the data. The climate data are in csv format and the biomass are in excel format. We must not forget to import all the excel sheets that include data.
 climate.df <- list.files(pattern = "*.csv") %>% 
@@ -41,55 +48,85 @@ head(climate.df)
 head(biomass.df)
 ```
 
-- Calculate mean summer air temperatures each site. Use the logger "gradient". The OTC logger is part of another experiment. 
-```{r}
+-   Calculate mean summer air temperatures each site. Use the logger "gradient". The OTC logger is part of another experiment.
+
+```{r, message=FALSE}
 library("lubridate") # to convert the dates
 climate <- climate.df %>% 
               mutate(date= ymd(month)) %>% # convert the date so it is easier to choose the summer months
-              mutate(site = factor(site, levels = c("L", "M", "A", "H"))) %>% # set sites as factors
+              mutate(site = as.factor(site)) %>% # set site as factor
               filter(month(date)>05, month(date)<09, logger=="gradient") %>% # we need to filter the data to include only summer months and logger to use only gradient
               group_by(site) %>% # group the values by site 
               summarise(meansummertemp=mean(value, na.rm=T)) #calculate the mean temperature
+climate2015 <-climate.df %>% 
+              mutate(date= ymd(month)) %>% 
+              mutate(site = as.factor(site)) %>% 
+              filter(month(date)>05, month(date)<09, year(date)==2015, logger=="gradient") %>% # we need to filter the data to include only summer months of 2015 
+              group_by(site) %>% 
+              summarise(meansummertemp=mean(value, na.rm=T))
+            
 ```
 
+-   Calculate biomass per plot.
 
-- Calculate biomass per plot.
 ```{r, message=FALSE}
 biomass <- biomass.df %>%
               select(c(site, plot, production)) %>% #choose columns we are interested in
-              mutate(site = factor(site, levels = c("L", "M", "A", "H"))) %>% # set sites as factors
+              mutate(site = as.factor(site), # set site as factor
+                     plot= as.factor(plot)) %>% # set plot as factor
               group_by(site, plot) %>% 
               summarise(biomass = sum(production, na.rm = T))# calculate total biomass per plot
 ```
 
+-   Join the climate data to the biomass data.
 
-- Join the climate data to the biomass data.
 ```{r}
-bc.df <- left_join(biomass,climate, by="site") #take all rows from biomass and matching rows from climate.
+bc.df <- left_join(biomass,climate2015, by="site") #take all rows from biomass and matching rows from climate.
 ```
 
+-   Choose and fit a suitable model to find the relation a biomass and mean summer temperature.
 
-- Choose and fit a suitable model to find the relation a biomass and mean summer temperature. 
 ```{r, message=FALSE}
 library(nlme)
-fit.lme <- lme(biomass~meansummertemp, random=~plot|site, data=bc.df)
+fit1.lme <- lme(biomass~meansummertemp, random=~+1|site, data=bc.df)
+anova(fit1.lme)
+summary(fit1.lme)
+
 ```
 
+-   Check the model's assumptions are met.
 
-- Check the model's assumptions are met.
 ```{r}
+#Are the residuals well behaved?
+#Is the response variable a reasonably linear function of the fitted values?
+#Are the errors reasonably close to normally distributed?
+residuals <- resid(fit1.lme)
+plot(fitted(fit1.lme), residuals)
+abline(0,0)
+plot(fitted(fit1.lme), bc.df$biomass)
+qqnorm(residuals)
+qqline(residuals)
+
+
 
 ```
 
+-   Report key statistics from your model in a table or in the text.
 
-- Report key statistics from your model in a table or in the text.
+-   Make a publication quality plot that shows the relationship between biomass and mean summer temperature.
 
-- Make a publication quality plot that shows the relationship between biomass and mean summer temperature.
 ```{r}
-
+tomato.df$fit <- predict(fit1.lme, level=0)
+p2 <- ggplot(tomato.df, aes(x=Time, y=Height,
+colour=Nitrogen, shape=Nitrogen)) #1
+p2 <- p2 + geom_jitter(width=0.1, height=0, size=3,
+alpha=0.5) #2
+p2 <- p2 + theme_bw(base_size=20)
+p2 <- p2 + geom_line(aes(y=fit)) #3
+p2 <- p2 + labs(x="Weeks", y="Height (cm)") #4
+p2
 ```
 
+-   Write the statistical part of the methods and results sections of a manuscript describing the biomass-climate relationship. You should justify your choice of model.
 
-- Write the statistical part of the methods and results sections of a manuscript describing the biomass-climate relationship. You should justify your choice of model.
-
-- Write a biological interpretation of your final model.					
+-   Write a biological interpretation of your final model.
