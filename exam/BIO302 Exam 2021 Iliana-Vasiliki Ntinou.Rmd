@@ -41,13 +41,6 @@ climate.df <- read_csv(here("exam/China_2013_2016_AirTemp_month.csv"))
 biomass.df <- excel_sheets(path = "biomass2015.xls") %>% 
 
                 map_dfr(~read_excel(path = "biomass2015.xls", sheet =.x))
-
-
-# 4th step is optional but it is just to check if the data were imported correctly by looking at the first six rows of each dataframe.
-
-head(climate.df)
-
-head(biomass.df)
 ```
 
 -   Calculate mean summer air temperatures each site. Use the logger "gradient". The OTC logger is part of another experiment.
