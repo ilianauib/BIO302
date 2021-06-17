@@ -3,6 +3,8 @@ title: "BIO302 Exam 2021"
 author: "Iliana Vasiliki Ntinou"
 date: "6/9/2021"
 output: html_document
+bibliography: bibliography.bibtex
+link-citations: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -13,16 +15,61 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### 1) Discuss the advantages and challenges of pre-registering an experiment.
 
+Fortunately, there are strategies that help strike a balance between thoroughness and avoiding false discoveries. Perhaps the most important, if obvious, strategy is to only consider plausible relationships, but the list of plausible relationships is often long. In such cases, methods to correct P values for multiple testing or multiple comparisons (such as p.adjust in R) can help reduce the chance of false discoveries. Finally, if we clearly communicate that our goal is exploration, meaning the generation but not the testing of hypotheses, the consequences of false discoveries are minimized. By assiduously avoiding any claims of confirmation, we can emphasize that the proposed hypotheses should not be accepted until they are tested with independent data.Tredennick
+
 ### 2) Discuss the steps you plan to use to make your thesis reproducible.
+Basic idea
+Data cleaning
+Data formatting
+Statistical analysis
+Plotting
+Putting numbers in the MS
+… all done with code. All reproducible.
+
+Tools for reproducible data analysis
+Use an integrated development environment (e.g. RStudio)
+Adopt an R style guide
+Getting help
+Version control with git
+Rmarkdown for dynamic documents
+Data handling with tidyverse
+
+Archive raw data to suitable archive
+
+Neotoma
+Pangaea.de
+NCDC
+What concerns do you have about archiving data?
+
+What about archiving your code?
+
+A good Integrated Development Environment makes R coding more efficient and reduces some types of bugs
+
+Bracket matching
+Autocomplete of function/variable names
+Integrated help
+Project management and version control
+Help debugging
+integration with Rmarkdown
+
+Use Rstudio projects for project management
+
+Keeps related files together
+Keeps track of working directory, history and environment
+Integration with version control
+
+Use relative paths
 
 ### 3) A statistical test has a p-value of 0.04. How should this p-value be interpreted? Is it good evidence against the null hypothesis?
 
-### 4) A graduate student got this advice from their supervisor: "Just make a giant correlation matrix and see what is interesting". Discuss the potential problems with this approach and how they could be resolved.
+### 4) A graduate student got this advice from their supervisor: "Just make a giant correlation matrix and see what is interesting". Discuss the potential problems with this approach and how they could be resolved.[@RN235]
 
 
 One problem has to do with multiple testing. Since we have a giant correlation matrix, the number of tests that are going to be done in order to find significant results is also going to be very big. Therefore, we might end up with significant results that don't correspond to real significant result but were found by chance
 One possible solution is to do multiple testing correction, like bonferroni correction or fdr control (βάλε τι έχετε κάνει)
 https://l.facebook.com/l.php?u=https%3A%2F%2Fstats.stackexchange.com%2Fquestions%2F90023%2Fmultiple-comparisons-for-correlation-matrix%3Ffbclid%3DIwAR2A0vBFMWQ49x8YWBduEDOSbzPaJlewtpbmbbopMI4vfPOPQD1RMxzE6Aw&h=AT0Y6afz7pQbdbhtFiy_pFhero_W7hdE-9LscajYMg_wqgZkzvBUONMb-Pc4VFguAw_g3etj3kUbj4j-wA_tL1RX42Bmk8NA893CKUJWO-DZNaOyEJdgJ8WeD5MICmOszzb7sg
+
+The central trade-off in exploratory modeling is the desire to be thorough vs. the need to avoid spurious relationships. To avoid missing potentially important relationships we should cast a wide net, considering all plausible associations. Modern statistical computing lets us examine hundreds of correlations or scatterplots with a few lines of code. It is also easy to fit large sets of nested models with different additive and multiplicative combinations of dozens of potential covariates, and compare them using some measure of model fit. But these approaches are prone to type-I errors (false discoveries): in a data set with randomly generated “covariates,” we expect one in 20 correlations to be significant by chance at the α = 0.05 level. Generating hypotheses based on spurious correlations is a waste of time at best.Tredennik
 
 ### 5) Explain what autocorrelation is, how it can be detected and how its effect on regression can be controlled for.
 
@@ -30,15 +77,18 @@ https://l.facebook.com/l.php?u=https%3A%2F%2Fstats.stackexchange.com%2Fquestions
 
 -   Climate data can be downloaded from <https://osf.io/34qnr/>. Biomass data can be downloaded from <https://osf.io/6sfqw/>.
 
-```{r, message=FALSE}
+```{r, }
 # 1st step is to load libraries
+library(here)
 library(readxl) 
 library(tidyverse)
 ```
 
 ```{r, warning=FALSE, message=FALSE}
 # 2nd step is to import the data. The climate data are in csv format and the biomass are in excel format. We must not forget to import all the excel sheets that include data.
-climate.df <- list.files(pattern = "*.csv") %>% 
+climate.df <- read_csv((here("exam/China_2013_2016_AirTemp_month.csv")))
+
+#list.files(pattern = "*.csv") %>% 
                 map_dfr(~read_csv(.))
 
 biomass.df <- excel_sheets(path = "biomass2015.xls") %>% 
@@ -58,14 +108,21 @@ climate <- climate.df %>%
               filter(month(date)>05, month(date)<09, logger=="gradient") %>% # we need to filter the data to include only summer months and logger to use only gradient
               group_by(site) %>% # group the values by site 
               summarise(meansummertemp=mean(value, na.rm=T)) #calculate the mean temperature
+```
+
+If we were interested to look at how the mean summer air temperature of 2015 affected that years biomass then we would select the data only from 2015. That could be done as presented below:
+```{r}
 climate2015 <-climate.df %>% 
               mutate(date= ymd(month)) %>% 
               mutate(site = as.factor(site)) %>% 
               filter(month(date)>05, month(date)<09, year(date)==2015, logger=="gradient") %>% # we need to filter the data to include only summer months of 2015 
               group_by(site) %>% 
               summarise(meansummertemp=mean(value, na.rm=T))
-            
 ```
+
+
+In this case we choose to continue with the overall mean summer air temperature from data taken from all the years in the dataset.Here the question is to model the relationship between biomass and mean summer air temperature. Having data from many years would give us a better picture of what the mean summer air temperature is in a place, because it could for example happen that one year there was an unusual phenomenon that led to the mean temperature of that year being an extreme.In the latter case, we would be examining whether that phenomenon that affected that years temperature is related to that year's production.
+
 
 -   Calculate biomass per plot.
 
@@ -88,10 +145,11 @@ bc.df <- left_join(biomass,climate2015, by="site") #take all rows from biomass a
 
 ```{r, message=FALSE}
 library(nlme)
-fit1.lme <- lme(biomass~meansummertemp, random=~+1|site, data=bc.df)
+fit1.lme <- lme(biomass~., random=~+1|site, data=bc.df)
 anova(fit1.lme)
 summary(fit1.lme)
-
+add1(fit1.lme, ~ I(meansummertemp^2) + .^2, data=bc.df)
+stats::drop1(fit1.lme, test="F") 
 ```
 
 -   Check the model's assumptions are met.
@@ -108,7 +166,6 @@ qqnorm(residuals)
 qqline(residuals)
 
 
-
 ```
 
 -   Report key statistics from your model in a table or in the text.
@@ -116,17 +173,20 @@ qqline(residuals)
 -   Make a publication quality plot that shows the relationship between biomass and mean summer temperature.
 
 ```{r}
-tomato.df$fit <- predict(fit1.lme, level=0)
-p2 <- ggplot(tomato.df, aes(x=Time, y=Height,
-colour=Nitrogen, shape=Nitrogen)) #1
-p2 <- p2 + geom_jitter(width=0.1, height=0, size=3,
-alpha=0.5) #2
-p2 <- p2 + theme_bw(base_size=20)
-p2 <- p2 + geom_line(aes(y=fit)) #3
-p2 <- p2 + labs(x="Weeks", y="Height (cm)") #4
-p2
+
 ```
 
 -   Write the statistical part of the methods and results sections of a manuscript describing the biomass-climate relationship. You should justify your choice of model.
 
+All statistical analyses and graphics were performed using Rversion 3.2.2. (R Core Team, 2013). Soil temperature ﬂuctuations from December 2014–December 2015 were plotted to assist inassessing the eﬀects of soil temperature on soil pH, soil moisture,soil chemicals, and vegetation regeneration. Principal componentanalysis (PCA) was used to test for relationships between thepredictor variables: soil temperature, soil moisture, soil pH, andsoil chemical levels. The relationships between variables wereplotted using a biplot to aid visual interpretation. We performed aleast absolute shrinkage and selection operator (LASSO) (packagelars) regression to drop variables with coeﬃcients of zero and reduce high dimensional data for the regression analysis andmodel selection. A simple linear regression analysis was runwith each of the remaining predictor variables and either rootbiomass or vegetation regeneration as the response variable.Model selection was based on the Akaike’s Information Criterion(AIC). The model with the lowest AIC score was selected. Sincevegetation regeneration was collected as proportion data, a logittransformation (package logit) was applied prior to the regressionanalysis.
+
+
+
+If we lack a priori knowledge about the abiotic factors that regulate P. smintheus population dynamics, we can use statistical models to answer the question, “Which weather covariates are associated with population growth rates?” We will focus on selecting a model that best fits the entire data set, and we will consider an arbitrarily large set of candidate models, because we are not primarily concerned about the drawbacks of multiple comparisons. In a way, modeling for exploration is an “anything goes” exercise, so long as the results are clearly reported as a data exploration mission and the potential for spurious effects is carefully considered. Terdennik
+
+
 -   Write a biological interpretation of your final model.
+
+
+
+# References
