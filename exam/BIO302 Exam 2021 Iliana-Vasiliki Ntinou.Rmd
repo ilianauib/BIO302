@@ -91,7 +91,7 @@ bc.df <- left_join(biomass,climate2015, by="site") #take all rows from biomass a
 
 ```{r, message=FALSE}
 library(nlme)
-fit1.lme <- lme(biomass~., random=~+1|site, data=bc.df)
+fit1.lme <- lme(biomass~meansummertemp, random=~+1|site, data=bc.df)
 anova(fit1.lme)
 summary(fit1.lme)
 
@@ -121,14 +121,14 @@ qqline(residuals)
 pb <- ggplot(bc.df, aes( x=meansummertemp, y=biomass, colour=site, fill=site))+
       
       geom_boxplot()+
+  
+      scale_colour_manual(values= c("#7570B3","#E7298A","#E6AB02", "#A6761D"), breaks = c("H", "A", "M", "L")) +
       
-      scale_colour_manual(values= c("#7570B3","#E7298A","#E6AB02", "#A6761D")) +
-      
-      scale_fill_manual(values=alpha(c("#7570B3","#E7298A","#E6AB02", "#A6761D"), .3))+
+      scale_fill_manual(values=alpha(c("#7570B3","#E7298A","#E6AB02", "#A6761D"), .3), breaks = c("H", "A", "M", "L"))+
       
       ggtitle("Relationship between biomass and mean summer temperature per site")+
       
-      labs(x="Mean Summer Temperature (C°)", y="Biomass (kg)", fill="Site", col="Site")+
+      labs(x="Mean Summer Temperature (C°)", y="Biomass (kg)", col="Site", fill="Site")+
       
       theme_classic(base_size=16)+
       
