@@ -22,6 +22,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(here)
 library(readxl) 
 library(tidyverse)
+library(nlme)
+library("lubridate") # to convert the dates. It is much easier to manipulate dates with the tools in this library
 ```
 
 ```{r, warning=FALSE, message=FALSE}
@@ -47,14 +49,15 @@ biomass.df <- excel_sheets(path = "biomass2015.xls") %>%
 
 ```{r, message=FALSE}
 
-library("lubridate") # to convert the dates. It is much easier to manipulate dates with the tools in this library
+
 
 climate <- climate.df %>% 
                        mutate(date= ymd(month)) %>% # convert the date so it is easier to choose the summer months
                        mutate(site = as.factor(site)) %>% # set site as factor
                        filter(month(date)>05, month(date)<09, logger=="gradient") %>% # we need to filter the data to include only summer months and logger to use only gradient
                        group_by(site) %>% # group the values by site 
-                       summarise(meansummertemp=mean(value, na.rm=T)) #calculate the mean temperature
+                       summarise(meansummertemp=mean(value, na.rm=T))#calculate the mean temperature
+
 ```
 
 If we were interested to look at how the mean summer air temperature of 2015 affected that years biomass then we would select the data only from 2015. That could be done as presented below:
@@ -84,16 +87,34 @@ biomass <- biomass.df %>%
 -   Join the climate data to the biomass data.
 
 ```{r}
-bc.df <- left_join(biomass,climate2015, by="site") #take all rows from biomass and matching rows from climate.
+#take all rows from biomass and matching rows from climate.bc.df <- left_join(biomass,climate, by="site")
+bc <- left_join(biomass,climate, by="site") 
+
+#take all rows from biomass and matching rows from climate.bc.df <- left_join(biomass,climate, by="site")
+bc.df <- left_join(biomass,climate, by="site")
+#make temperature data ordinal and give levels
+bc.df$meansummertemp <- factor(bc.df$meansummertemp)
+levels(bc.df$meansummertemp)<- c("very low", "low","medium", "high")
 ```
 
 -   Choose and fit a suitable model to find the relation a biomass and mean summer temperature.
 
-```{r, message=FALSE}
-library(nlme)
-fit1.lme <- lme(biomass~meansummertemp, random=~+1|site, data=bc.df)
-anova(fit1.lme)
+```{r}
+#correlation
+cor(bc$biomass, bc$meansummertemp, use="pairwise.complete.obs")
+#test if the correlation is significant
+cor.test(x=bc$biomass, y=bc$meansummertemp, use="pairwise.complete.obs")
+
+fit1.lme <- lme(biomass~meansummertemp, random=~+1|site,  weights = varIdent(form = ~ +1|site), data=bc)
+anova(fit1.lme, type="m")
 summary(fit1.lme)
+
+fit2.lm <-lm(biomass~meansummertemp,  data=bc.df)
+anova(fit2.lm)
+summary(fit2.lm)
+
+
+
 
 ```
 
@@ -117,35 +138,68 @@ qqline(residuals)
 -   Make a publication quality plot that shows the relationship between biomass and mean summer temperature.
 
 ```{r}
-
-pb <- ggplot(bc.df, aes( x=meansummertemp, y=biomass, colour=site, fill=site))+
+p1 <- ggplot(bc, aes( x=meansummertemp, y=biomass, colour=site, fill=site))+
       
       geom_boxplot()+
   
-      scale_colour_manual(values= c("#7570B3","#E7298A","#E6AB02", "#A6761D"), breaks = c("H", "A", "M", "L")) +
+      scale_colour_manual(values= c("#7570B3","#E7298A","#E6AB02", "#A6761D"), 
+                          breaks = c("H", "A", "M", "L"), labels = c("High alpine", "Alpine", "Middle", "Lowland")) +
       
-      scale_fill_manual(values=alpha(c("#7570B3","#E7298A","#E6AB02", "#A6761D"), .3), breaks = c("H", "A", "M", "L"))+
+      scale_fill_manual(values= alpha(c("#7570B3","#E7298A","#E6AB02", "#A6761D"), .3), 
+                        breaks = c("H", "A", "M", "L"), labels = c("High alpine", "Alpine", "Middle", "Lowland"))+
       
       ggtitle("Relationship between biomass and mean summer temperature per site")+
       
-      labs(x="Mean Summer Temperature (C°)", y="Biomass (kg)", col="Site", fill="Site")+
+      labs(x="Mean Summer Temperature (C°)", y="Biomass (g·m)", col="Site", fill="Site")+
       
       theme_classic(base_size=16)+
       
       theme(plot.title = element_text(hjust = 0.41, size=16),
             
-            axis.text.x = element_text(colour="black"), 
+      axis.text.x = element_text(colour="black"), 
             
-            axis.text.y = element_text(colour="black"), 
+      axis.text.y = element_text(colour="black"), 
             
-            legend.text = element_text(colour="black"),   
+      legend.text = element_text(colour="black"),   
             
-            panel.grid.minor.x= element_blank(), panel.grid.major.x=element_blank(),
+      panel.grid.minor.x= element_blank(), panel.grid.major.x=element_blank(),
             
-            panel.grid.minor.y= element_blank(), panel.grid.major.y=element_blank(),
+      panel.grid.minor.y= element_blank(), panel.grid.major.y=element_blank(),
             
-            strip.background=element_blank())
-pb
+      strip.background=element_blank())
+p1
+
+p2 <- ggplot(bc.df, aes( x=meansummertemp, y=biomass, colour=site, fill=site))+
+      
+      geom_boxplot()+
+  
+      scale_colour_manual(values= c("#7570B3","#E7298A","#E6AB02", "#A6761D"), 
+                          breaks = c("H", "A", "M", "L"), labels = c("High alpine", "Alpine", "Middle", "Lowland")) +
+      
+      scale_fill_manual(values= alpha(c("#7570B3","#E7298A","#E6AB02", "#A6761D"), .3), 
+                        breaks = c("H", "A", "M", "L"), labels = c("High alpine", "Alpine", "Middle", "Lowland"))+
+      
+      ggtitle("Relationship between biomass and mean summer temperature per site")+
+      
+      labs(x="Mean Summer Temperature (C°)", y="Biomass (g·m)", col="Site", fill="Site")+
+      
+      theme_classic(base_size=16)+
+      
+      theme(plot.title = element_text(hjust = 0.41, size=16),
+            
+      axis.text.x = element_text(colour="black"), 
+            
+      axis.text.y = element_text(colour="black"), 
+            
+      legend.text = element_text(colour="black"),   
+            
+      panel.grid.minor.x= element_blank(), panel.grid.major.x=element_blank(),
+            
+      panel.grid.minor.y= element_blank(), panel.grid.major.y=element_blank(),
+            
+      strip.background=element_blank())
+p2
+
 ```
 
 -   Write the statistical part of the methods and results sections of a manuscript describing the biomass-climate relationship. You should justify your choice of model.
