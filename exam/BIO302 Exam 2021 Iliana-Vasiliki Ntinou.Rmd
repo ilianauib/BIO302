@@ -99,21 +99,50 @@ levels(bc.df$meansummertemp)<- c("very low", "low","medium", "high")
 
 -   Choose and fit a suitable model to find the relation a biomass and mean summer temperature.
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 #correlation
 cor(bc$biomass, bc$meansummertemp, use="pairwise.complete.obs")
 #test if the correlation is significant
 cor.test(x=bc$biomass, y=bc$meansummertemp, use="pairwise.complete.obs")
 
+
+#linear mixed effect model
 fit1.lme <- lme(biomass~meansummertemp, random=~+1|site,  weights = varIdent(form = ~ +1|site), data=bc)
 anova(fit1.lme, type="m")
 summary(fit1.lme)
 
+
+#linear model but predictor is converted to categorical
 fit2.lm <-lm(biomass~meansummertemp,  data=bc.df)
 anova(fit2.lm)
 summary(fit2.lm)
+#multiple comparison between the different groups
+library(multcomp)
+mcfit2 <- glht(fit2.lm, linfct=mcp(meansummertemp="Tukey"), data=bc.df)
+summary(mcfit2)
 
 
+#mugeneralised linear model
+fit3.glm <- glm(biomass~poly(meansummertemp, 2), family=poisson,  data=bc)
+anova(fit3.glm, test="Chi")
+summary(fit3.glm) 
+#we have overdispersion so we adjust the model
+fit4.glm <- glm(biomass~poly(meansummertemp, 2), family=quasipoisson,  data=bc)
+anova(fit3.glm, test="F")
+summary(fit3.glm)
+#Create a data frame with high resolution temp
+# variable (from 6 to 12 with 0.1 steps):
+predicted.df <- data.frame(temp = seq(6, 12, 0.1))
+#Use the model to predict number of beers for these
+# temp values:
+predicted.df$biomass <- predict(fit4.glm, list(meansummertemp=predicted.df$temp),type='response')
+#Finding optimum temperature:
+filter(predicted.df,biomass==max(biomass))
+
+
+library(MASS)
+fit5.glmm <- glmmPQL(biomass~meansummertemp, random=~+1|site, family=quasipoisson, data=bc)
+summary(fit5.glmm)
 
 
 ```
@@ -131,6 +160,15 @@ plot(fitted(fit1.lme), bc.df$biomass)
 qqnorm(residuals)
 qqline(residuals)
 
+par(mfrow=c(2,2))
+plot(fit2.lm)
+
+par(mfrow=c(2,2))
+plot(fit3.glm)
+
+par(mfrow=c(2,2))
+plot(fit4.glm)
+
 ```
 
 -   Report key statistics from your model in a table or in the text.
@@ -138,9 +176,14 @@ qqline(residuals)
 -   Make a publication quality plot that shows the relationship between biomass and mean summer temperature.
 
 ```{r}
+
 p1 <- ggplot(bc, aes( x=meansummertemp, y=biomass, colour=site, fill=site))+
       
       geom_boxplot()+
+      
+      stat_summary(fun=mean, geom="point", shape=21, size=6)+
+      
+      ylim(0, 150)+
   
       scale_colour_manual(values= c("#7570B3","#E7298A","#E6AB02", "#A6761D"), 
                           breaks = c("H", "A", "M", "L"), labels = c("High alpine", "Alpine", "Middle", "Lowland")) +
@@ -148,7 +191,7 @@ p1 <- ggplot(bc, aes( x=meansummertemp, y=biomass, colour=site, fill=site))+
       scale_fill_manual(values= alpha(c("#7570B3","#E7298A","#E6AB02", "#A6761D"), .3), 
                         breaks = c("H", "A", "M", "L"), labels = c("High alpine", "Alpine", "Middle", "Lowland"))+
       
-      ggtitle("Relationship between biomass and mean summer temperature per site")+
+      ggtitle("Relationship between biomass and mean summer temperature in alpine grasslands")+
       
       labs(x="Mean Summer Temperature (C°)", y="Biomass (g·m)", col="Site", fill="Site")+
       
@@ -173,13 +216,17 @@ p2 <- ggplot(bc.df, aes( x=meansummertemp, y=biomass, colour=site, fill=site))+
       
       geom_boxplot()+
   
+      stat_summary(fun=mean, geom="point", shape=21, size=6)+
+  
+      ylim(0, 150)+
+  
       scale_colour_manual(values= c("#7570B3","#E7298A","#E6AB02", "#A6761D"), 
                           breaks = c("H", "A", "M", "L"), labels = c("High alpine", "Alpine", "Middle", "Lowland")) +
       
       scale_fill_manual(values= alpha(c("#7570B3","#E7298A","#E6AB02", "#A6761D"), .3), 
                         breaks = c("H", "A", "M", "L"), labels = c("High alpine", "Alpine", "Middle", "Lowland"))+
       
-      ggtitle("Relationship between biomass and mean summer temperature per site")+
+      ggtitle("Relationship between biomass and mean summer temperature in alpine grasslands")+
       
       labs(x="Mean Summer Temperature (C°)", y="Biomass (g·m)", col="Site", fill="Site")+
       
@@ -199,6 +246,42 @@ p2 <- ggplot(bc.df, aes( x=meansummertemp, y=biomass, colour=site, fill=site))+
             
       strip.background=element_blank())
 p2
+
+
+p3 <- ggplot(bc, aes( x=meansummertemp, y=biomass))+
+      
+      geom_line(data=predicted.df, aes(x=temp, y=biomass))+
+    
+      stat_summary(data=bc, fun=mean, geom="point", shape=21, size=6, aes(group=site, fill=site, colour=site))+
+  
+      ylim(0, 150)+
+   
+      scale_colour_manual(values= c("#7570B3","#E7298A","#E6AB02", "#A6761D"), 
+                          breaks = c("H", "A", "M", "L"), labels = c("High alpine", "Alpine", "Middle", "Lowland")) +
+  
+      scale_fill_manual(values= alpha(c("#7570B3","#E7298A","#E6AB02", "#A6761D"), .3), 
+                        breaks = c("H", "A", "M", "L"), labels = c("High alpine", "Alpine", "Middle", "Lowland"))+
+      
+      ggtitle("Relationship between biomass and mean summer temperature in alpine grasslands")+
+      
+      labs(x="Mean Summer Temperature (C°)", y="Biomass (g·m)",  fill="Site", col="Site")+
+      
+      theme_classic(base_size=16)+
+      
+      theme(plot.title = element_text(hjust = 0.41, size=16),
+            
+      axis.text.x = element_text(colour="black"), 
+            
+      axis.text.y = element_text(colour="black"), 
+            
+      legend.text = element_text(colour="black"),   
+            
+      panel.grid.minor.x= element_blank(), panel.grid.major.x=element_blank(),
+            
+      panel.grid.minor.y= element_blank(), panel.grid.major.y=element_blank(),
+            
+      strip.background=element_blank())
+p3
 
 ```
 
