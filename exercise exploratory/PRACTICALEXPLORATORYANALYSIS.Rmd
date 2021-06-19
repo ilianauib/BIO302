@@ -74,6 +74,12 @@ cov(penguins$bill_length_mm, penguins$bill_depth_mm, use="pairwise.complete.obs"
 cor(penguins$bill_length_mm, penguins$bill_depth_mm, use="pairwise.complete.obs")
 #test if the correlation is significant
 cor.test(x=penguins$bill_length_mm, y=penguins$bill_depth_mm, use="pairwise.complete.obs")
+
+#Perform a Kolmogorov-Smirnov test to test if the data follow a normal distribution.
+#The KS test is a non-parametric and distribution-free test: It makes no assumption about the distribution of data.
+#In the Kolmogorov test for the H0 is that the data are normally distributed. T
+ks.test(residuals(fit1.lme), "pnorm", mean=mean(residuals(fit1.lme)), sd=sd(residuals(fit1.lme))) 
+
 ```
 
 

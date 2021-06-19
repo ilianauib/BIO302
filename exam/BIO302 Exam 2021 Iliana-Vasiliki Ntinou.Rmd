@@ -18,12 +18,18 @@ knitr::opts_chunk$set(echo = TRUE)
 -   Climate data can be downloaded from <https://osf.io/34qnr/>. Biomass data can be downloaded from <https://osf.io/6sfqw/>.
 
 ```{r, message=FALSE}
-# 1st step is to load libraries
+#1st step is to load libraries
 library(here)
 library(readxl) 
 library(tidyverse)
 library(nlme)
-library("lubridate") # to convert the dates. It is much easier to manipulate dates with the tools in this library
+library(lubridate)
+library(qqplotr)
+library(report)
+library(see)
+library(JWileymisc)
+library(MASS)
+library(AICcmodavg)
 ```
 
 ```{r, warning=FALSE, message=FALSE}
@@ -36,9 +42,7 @@ download.file (url, "China_2013_2016_AirTemp_month.csv")
 climate.df <- read_csv(here("exam/China_2013_2016_AirTemp_month.csv"))
 
 
-#3rd step is to import the biomass data which are in excel format. The biomass data can be attained from this https://osf.io/6sfqw/ url but it's best to download it manually and save it in the working folder so tht all sheets are saved in the same file. 
-
-#Then we can import the data.
+#3rd step is to import the biomass data which are in excel format. The biomass data can be attained from this https://osf.io/6sfqw/ url but it's best to download it manually and save it in the working folder so that all sheets are saved in the same file. 
 
 biomass.df <- excel_sheets(path = "biomass2015.xls") %>% 
 
@@ -48,15 +52,17 @@ biomass.df <- excel_sheets(path = "biomass2015.xls") %>%
 -   Calculate mean summer air temperatures each site. Use the logger "gradient". The OTC logger is part of another experiment.
 
 ```{r, message=FALSE}
-
-
-
 climate <- climate.df %>% 
-                       mutate(date= ymd(month)) %>% # convert the date so it is easier to choose the summer months
-                       mutate(site = as.factor(site)) %>% # set site as factor
-                       filter(month(date)>05, month(date)<09, logger=="gradient") %>% # we need to filter the data to include only summer months and logger to use only gradient
-                       group_by(site) %>% # group the values by site 
-                       summarise(meansummertemp=mean(value, na.rm=T))#calculate the mean temperature
+                    #convert the date so it is easier to choose the summer months
+                    mutate(date= ymd(month)) %>% 
+                    #set site as factor
+                    mutate(site = as.factor(site)) %>% 
+                    #we need to filter the data to include only summer months and gradient logger  
+                    filter(month(date)>05, month(date)<09, logger=="gradient") %>% 
+                    #group the values by site  
+                    group_by(site) %>%  
+                    #calculate the mean temperature
+                    summarise(meansummertemp=mean(value, na.rm=T))
 
 ```
 
@@ -66,7 +72,8 @@ If we were interested to look at how the mean summer air temperature of 2015 aff
 climate2015 <-climate.df %>% 
               mutate(date= ymd(month)) %>% 
               mutate(site = as.factor(site)) %>% 
-              filter(month(date)>05, month(date)<09, year(date)==2015, logger=="gradient") %>% # we need to filter the data to include only summer months of 2015 
+              #we need to filter the data to include only summer months of 2015
+              filter(month(date)>05, month(date)<09, year(date)==2015, logger=="gradient") %>%  
               group_by(site) %>% 
               summarise(meansummertemp=mean(value, na.rm=T))
 ```
@@ -77,101 +84,87 @@ In this case we choose to continue with the overall mean summer air temperature 
 
 ```{r, message=FALSE}
 biomass <- biomass.df %>%
-              select(c(site, plot, production)) %>% #choose columns we are interested in
-              mutate(site = as.factor(site), # set site as factor
-                     plot= as.factor(plot)) %>% # set plot as factor
+              #choose columns we are interested in
+              dplyr::select(c(site,plot, production)) %>% 
+              #set site as factor
+              mutate(site = as.factor(site), 
+                     # set plot as factor
+                     plot= as.factor(plot)) %>% 
               group_by(site, plot) %>% 
-              summarise(biomass = sum(production, na.rm = T))# calculate total biomass per plot
+              # calculate total biomass per plot
+              summarise(biomass = sum(production, na.rm = T))
 ```
 
 -   Join the climate data to the biomass data.
 
 ```{r}
-#take all rows from biomass and matching rows from climate.bc.df <- left_join(biomass,climate, by="site")
-bc <- left_join(biomass,climate, by="site") 
-
-#take all rows from biomass and matching rows from climate.bc.df <- left_join(biomass,climate, by="site")
-bc.df <- left_join(biomass,climate, by="site")
-#make temperature data ordinal and give levels
-bc.df$meansummertemp <- factor(bc.df$meansummertemp)
-levels(bc.df$meansummertemp)<- c("very low", "low","medium", "high")
+#take all rows from biomass and matching rows from climate
+bc <- left_join(biomass,climate, by="site")%>%
+      dplyr::select(c(site,biomass, meansummertemp))
 ```
 
 -   Choose and fit a suitable model to find the relation a biomass and mean summer temperature.
 
+Firstly, we can check for any strong correlations between the variables in our dataset.
 ```{r, warning=FALSE, message=FALSE}
-#correlation
-cor(bc$biomass, bc$meansummertemp, use="pairwise.complete.obs")
-#test if the correlation is significant
-cor.test(x=bc$biomass, y=bc$meansummertemp, use="pairwise.complete.obs")
-
-
-#linear mixed effect model
-fit1.lme <- lme(biomass~meansummertemp, random=~+1|site,  weights = varIdent(form = ~ +1|site), data=bc)
-anova(fit1.lme, type="m")
-summary(fit1.lme)
-
-
-#linear model but predictor is converted to categorical
-fit2.lm <-lm(biomass~meansummertemp,  data=bc.df)
-anova(fit2.lm)
-summary(fit2.lm)
-#multiple comparison between the different groups
-library(multcomp)
-mcfit2 <- glht(fit2.lm, linfct=mcp(meansummertemp="Tukey"), data=bc.df)
-summary(mcfit2)
-
-
-#mugeneralised linear model
-fit3.glm <- glm(biomass~poly(meansummertemp, 2), family=poisson,  data=bc)
-anova(fit3.glm, test="Chi")
-summary(fit3.glm) 
-#we have overdispersion so we adjust the model
-fit4.glm <- glm(biomass~poly(meansummertemp, 2), family=quasipoisson,  data=bc)
-anova(fit3.glm, test="F")
-summary(fit3.glm)
-#Create a data frame with high resolution temp
-# variable (from 6 to 12 with 0.1 steps):
-predicted.df <- data.frame(temp = seq(6, 12, 0.1))
-#Use the model to predict number of beers for these
-# temp values:
-predicted.df$biomass <- predict(fit4.glm, list(meansummertemp=predicted.df$temp),type='response')
-#Finding optimum temperature:
-filter(predicted.df,biomass==max(biomass))
-
-
-library(MASS)
-fit5.glmm <- glmmPQL(biomass~meansummertemp, random=~+1|site, family=quasipoisson, data=bc)
-summary(fit5.glmm)
-
-
+library(GGally)
+GGally::ggpairs(bc, cardinality_threshold = 20)
 ```
+Mean summer temperature and site have the strongest correlation. That is expected since we have one value for the temperature per site.
+
+To choose the model we assume the data follow a normal distribution since the response variable (biomass) is continuous. The predictor variable (mean summer temperature) is also continuous, and the data are clustered in four sites. In that case we choose linear mixed effect model with random effect the sites. Since the research question is to find best model that fits the relationship between biomass and temperature, we assume that site is a random factor. In general, if an effect is fixed or random is mainly the decided by the research question or is  decided by the researcher (Schabenberger and Pierce 2001).
+```{r, warning=FALSE, message=FALSE}
+
+#First we build a list of candidate models
+mods <- list()
+    #null model: biomass isn't related to any variable
+    mods$fit.lme <- lme(biomass~+1, random=~+1|site, data=bc)
+    #linear mixed effect model
+    mods$fit0.lme <- lme(biomass~meansummertemp, random=~+1|site, data=bc)
+    #linear mixed effect model with weighted variance. We have to account for heteroskedasticity
+    #(the   variance for all observations in each site is not the same)
+    mods$fit1.lme <- lme(biomass~meansummertemp, random=~+1|site,
+                         weights = varIdent(form=~+1|site),data=bc)
+
+#Then we extract the AIC from each model. The best model is the one with the smallest AIC
+sapply(mods, AIC)
+
+#Alternatively we can compare the three models with anova.
+    #null model: biomass isn't related to any variable
+    fit.lme <- lme(biomass~+1, random=~+1|site, data=bc)
+    #linear mixed effect model
+    fit0.lme <- lme(biomass~meansummertemp, random=~+1|site, data=bc)
+    #linear mixed effect model with weighted variance. We have to account for heteroskedasticity
+    #(the   variance for all observations in each site is not the same)
+    fit1.lme <- lme(biomass~meansummertemp, random=~+1|site,
+                         weights = varIdent(form=~+1|site),data=bc)
+anova(fit.lme, fit0.lme, fit1.lme)
+#The improvement is significant.
+
+#Finally, we calculate the deltaAIC for each model and the AIC weights for each model.
+#ΔAIC - difference between the best AIC and AIC of the other models. 
+#Best model has a ΔAIC of zero, highest values for worst models.
+aictab(mods)
+```
+We see from the output that fit1.lme has the smallest AIC number and is significantly improving the model.
 
 -   Check the model's assumptions are met.
 
-```{r}
+```{r, message=FALSE}
 #Are the residuals well behaved?
 #Is the response variable a reasonably linear function of the fitted values?
 #Are the errors reasonably close to normally distributed?
-residuals <- resid(fit1.lme)
-plot(fitted(fit1.lme), residuals)
-abline(0,0)
-plot(fitted(fit1.lme), bc.df$biomass)
-qqnorm(residuals)
-qqline(residuals)
-
-par(mfrow=c(2,2))
-plot(fit2.lm)
-
-par(mfrow=c(2,2))
-plot(fit3.glm)
-
-par(mfrow=c(2,2))
-plot(fit4.glm)
-
+performance::check_model(fit1.lme)
 ```
+The model looks ok!
 
 -   Report key statistics from your model in a table or in the text.
+
+```{r, warning=FALSE}
+anova(fit1.lme, type="m")
+summary(fit1.lme)
+report::report(fit1.lme)
+```
 
 -   Make a publication quality plot that shows the relationship between biomass and mean summer temperature.
 
@@ -211,78 +204,6 @@ p1 <- ggplot(bc, aes( x=meansummertemp, y=biomass, colour=site, fill=site))+
             
       strip.background=element_blank())
 p1
-
-p2 <- ggplot(bc.df, aes( x=meansummertemp, y=biomass, colour=site, fill=site))+
-      
-      geom_boxplot()+
-  
-      stat_summary(fun=mean, geom="point", shape=21, size=6)+
-  
-      ylim(0, 150)+
-  
-      scale_colour_manual(values= c("#7570B3","#E7298A","#E6AB02", "#A6761D"), 
-                          breaks = c("H", "A", "M", "L"), labels = c("High alpine", "Alpine", "Middle", "Lowland")) +
-      
-      scale_fill_manual(values= alpha(c("#7570B3","#E7298A","#E6AB02", "#A6761D"), .3), 
-                        breaks = c("H", "A", "M", "L"), labels = c("High alpine", "Alpine", "Middle", "Lowland"))+
-      
-      ggtitle("Relationship between biomass and mean summer temperature in alpine grasslands")+
-      
-      labs(x="Mean Summer Temperature (C°)", y="Biomass (g·m)", col="Site", fill="Site")+
-      
-      theme_classic(base_size=16)+
-      
-      theme(plot.title = element_text(hjust = 0.41, size=16),
-            
-      axis.text.x = element_text(colour="black"), 
-            
-      axis.text.y = element_text(colour="black"), 
-            
-      legend.text = element_text(colour="black"),   
-            
-      panel.grid.minor.x= element_blank(), panel.grid.major.x=element_blank(),
-            
-      panel.grid.minor.y= element_blank(), panel.grid.major.y=element_blank(),
-            
-      strip.background=element_blank())
-p2
-
-
-p3 <- ggplot(bc, aes( x=meansummertemp, y=biomass))+
-      
-      geom_line(data=predicted.df, aes(x=temp, y=biomass))+
-    
-      stat_summary(data=bc, fun=mean, geom="point", shape=21, size=6, aes(group=site, fill=site, colour=site))+
-  
-      ylim(0, 150)+
-   
-      scale_colour_manual(values= c("#7570B3","#E7298A","#E6AB02", "#A6761D"), 
-                          breaks = c("H", "A", "M", "L"), labels = c("High alpine", "Alpine", "Middle", "Lowland")) +
-  
-      scale_fill_manual(values= alpha(c("#7570B3","#E7298A","#E6AB02", "#A6761D"), .3), 
-                        breaks = c("H", "A", "M", "L"), labels = c("High alpine", "Alpine", "Middle", "Lowland"))+
-      
-      ggtitle("Relationship between biomass and mean summer temperature in alpine grasslands")+
-      
-      labs(x="Mean Summer Temperature (C°)", y="Biomass (g·m)",  fill="Site", col="Site")+
-      
-      theme_classic(base_size=16)+
-      
-      theme(plot.title = element_text(hjust = 0.41, size=16),
-            
-      axis.text.x = element_text(colour="black"), 
-            
-      axis.text.y = element_text(colour="black"), 
-            
-      legend.text = element_text(colour="black"),   
-            
-      panel.grid.minor.x= element_blank(), panel.grid.major.x=element_blank(),
-            
-      panel.grid.minor.y= element_blank(), panel.grid.major.y=element_blank(),
-            
-      strip.background=element_blank())
-p3
-
 ```
 
 -   Write the statistical part of the methods and results sections of a manuscript describing the biomass-climate relationship. You should justify your choice of model.
