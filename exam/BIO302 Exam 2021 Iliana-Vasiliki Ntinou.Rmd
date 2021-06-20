@@ -1,7 +1,7 @@
 ---
 title: "BIO302 Exam 2021"
 author: "Iliana Vasiliki Ntinou"
-date: "6/9/2021"
+date: "21st of June 2021"
 output: html_document
 bibliography: bibliography.bibtex
 link-citations: yes
@@ -13,45 +13,41 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Answers
 
+### 3) A statistical test has a p-value of 0.04. How should this p-value be interpreted? Is it good evidence against the null hypothesis?
+
+The use of p-value in statistical testing is very common for determining the significance of a hypothesis. However, it happens to be that it can be misinterpreted or misused in many cases(Wasser, Amhrein).Traditionally, p-values are a much beloved tool for rejecting the null hypothesis. That, can hide several issues, like p-hacking and publication biases (Davey smith) which has lead to a reproducibility crisis (Baker). Thus, it is crucial to understand what it represents. A p-value is the probability of getting an affect at least as extreme as the one observed, assuming that the null hypothesis is true. Therefore, a p-value of 0.04 suggests that if there was no effect, we would get the observed difference or more in 4% of the times we would perform this test. The threshold of significance at 0.05 is set by no else but ourselves, so it could or could not be good evidence against the null hypothesis depending on where we set the threshold and what we find acceptable. Therefore if we want to be more precise at least we should acknowledge what a p-value does not tell us. It says nothing about the strength of an effect or its practical significance and it does not tell us that the alternative hypothesis is true. Additionally, the probability of finding "significance" increases by increasing the sample size, even if in reality the effect might be small and unimportant(Wassermein).
+
+### 5) Explain what autocorrelation is, how it can be detected and how its effect on regression can be controlled for.
+
+Autocorrelation is a phenomenon where an observation of a variable is correlated to another observation in that same variable. We usually refer to temporal autocorrelation when we have repeated measurements i.e., when the value of the variable at t+1 is dependent on the value of the variable at t. There is also spatial autocorrelation, which describes the proneness of two areas that are close to one another that we see as similar observations. In general, autocorrelation is present when observations are dependent on an aspect. This of course is a problem for regression analyses because it violates one of its assumptions, that the residuals are independent. Autocorrelation affects the standard errors and but leaves the coefficients unbiased. If not accounted for, it can also lead to type I error of false rejecting the null hypothesis. One way to test for autocorrelation is to do a Durbin-Watson test. The Durbin-Watson statistic ranges from 0 to 4. A result close to 0 or 4 implies an important positive or negative autocorrelation respectively, and values close to 2 mean less autocorrelation. There are many ways to control the effect of autocorrelation on the regression analysis. Typically, we use a 1st order autoregressive process corAR1(). There are other correlation structures that can be incorporated in a model like corARMA which stands for autoregressive moving average process and corCAR1 that represents a continuous autoregressive process. The [choice of an autocorrelation structure](http://finzi.psych.upenn.edu/R/library/stats/html/ar.html)) can be challenging , however, choosing the wrong structure is still better than assuming no autocorrelation at all.
+
 ### 6) Model the relationship between total plant biomass in alpine grasslands and summer air temperature in China. Available data are biomass per species per plot. There are \~15 plots in each of four sites. Each site is at a different elevation and has a climate logger.
 
 -   Climate data can be downloaded from <https://osf.io/34qnr/>. Biomass data can be downloaded from <https://osf.io/6sfqw/>.
 
-```{r, message=FALSE}
-#1st step is to load libraries
-library(here)
-library(readxl) 
-library(tidyverse)
-library(nlme)
-library(lubridate)
-library(qqplotr)
-library(report)
-library(see)
-library(JWileymisc)
-library(MASS)
-library(AICcmodavg)
-```
-
 ```{r, warning=FALSE, message=FALSE}
-# 2nd step is to import the climate data which are in csv format. 
+#Download and import the climate data which are in csv format. 
+library(knitr)
+library(tidyverse)
+library(here)
 
 url = "https://osf.io/34qnr/download"
-
 download.file (url, "China_2013_2016_AirTemp_month.csv")
-
 climate.df <- read_csv(here("exam/China_2013_2016_AirTemp_month.csv"))
 
 
-#3rd step is to import the biomass data which are in excel format. The biomass data can be attained from this https://osf.io/6sfqw/ url but it's best to download it manually and save it in the working folder so that all sheets are saved in the same file. 
+#Download and import the biomass data which are in excel format. The biomass data can be attained from this https://osf.io/6sfqw/ url but it's best to download it manually and save it in the working folder so that all sheets are saved in the same file. 
+library(readxl)
 
 biomass.df <- excel_sheets(path = "biomass2015.xls") %>% 
-
                 map_dfr(~read_excel(path = "biomass2015.xls", sheet =.x))
 ```
 
 -   Calculate mean summer air temperatures each site. Use the logger "gradient". The OTC logger is part of another experiment.
 
 ```{r, message=FALSE}
+library(lubridate)
+
 climate <- climate.df %>% 
                     #convert the date so it is easier to choose the summer months
                     mutate(date= ymd(month)) %>% 
@@ -68,7 +64,7 @@ climate <- climate.df %>%
 
 If we were interested to look at how the mean summer air temperature of 2015 affected that years biomass then we would select the data only from 2015. That could be done as presented below:
 
-```{r}
+```{r, message=FALSE}
 climate2015 <-climate.df %>% 
               mutate(date= ymd(month)) %>% 
               mutate(site = as.factor(site)) %>% 
@@ -88,16 +84,17 @@ biomass <- biomass.df %>%
               dplyr::select(c(site,plot, production)) %>% 
               #set site as factor
               mutate(site = as.factor(site), 
-                     # set plot as factor
-                     plot= as.factor(plot)) %>% 
+              #set plot as factor
+              plot= as.factor(plot)) %>% 
+              #group the variable
               group_by(site, plot) %>% 
-              # calculate total biomass per plot
+              #calculate total biomass per plot
               summarise(biomass = sum(production, na.rm = T))
 ```
 
 -   Join the climate data to the biomass data.
 
-```{r}
+```{r, message=FALSE}
 #take all rows from biomass and matching rows from climate
 bc <- left_join(biomass,climate, by="site")%>%
       dplyr::select(c(site,biomass, meansummertemp))
@@ -105,15 +102,20 @@ bc <- left_join(biomass,climate, by="site")%>%
 
 -   Choose and fit a suitable model to find the relation a biomass and mean summer temperature.
 
-Firstly, we can check for any strong correlations between the variables in our dataset.
+Firstly, we can check for any strong association between the variables in our dataset.
+
 ```{r, warning=FALSE, message=FALSE}
 library(GGally)
+
 GGally::ggpairs(bc, cardinality_threshold = 20)
 ```
-Mean summer temperature and site have the strongest correlation. That is expected since we have one value for the temperature per site.
 
-To choose the model we assume the data follow a normal distribution since the response variable (biomass) is continuous. The predictor variable (mean summer temperature) is also continuous, and the data are clustered in four sites. In that case we choose linear mixed effect model with random effect the sites. Since the research question is to find best model that fits the relationship between biomass and temperature, we assume that site is a random factor. In general, if an effect is fixed or random is mainly the decided by the research question or is  decided by the researcher (Schabenberger and Pierce 2001).
+Mean summer temperature and site have the strongest correlation. That is expected since we have one value for the temperature per site. We also see that the correlation between biomass and mean temperature is about the same with the correlation of biomass with site. But because we are not fishing for significance we must remember that when working with correlations we shall never assume that a change in one variable causes a change in another ([spurious correlations](https://www.tylervigen.com/spurious-correlations)). It means that there is a positive correlation but we don't know if the change in temperature causes the change in biomass. Anyway these results above may help us get a better view of our data.
+
+To choose a regression model we assume the data follow a normal distribution since the response variable (biomass) is continuous. The predictor variable (mean summer temperature) is also continuous, and the data are clustered in four sites. In that case we choose linear mixed effect model with random effect the sites. Since the research question is to find best model that fits the relationship between biomass and temperature, we assume that site is a random factor. In general, if an effect is fixed or random is mainly the decided by the research question or is decided by the researcher (Schabenberger and Pierce 2001).
+
 ```{r, warning=FALSE, message=FALSE}
+library(nlme)
 
 #First we build a list of candidate models
 mods <- list()
@@ -127,48 +129,64 @@ mods <- list()
                          weights = varIdent(form=~+1|site),data=bc)
 
 #Then we extract the AIC from each model. The best model is the one with the smallest AIC
+library(AICcmodavg)
+    
 sapply(mods, AIC)
-
-#Alternatively we can compare the three models with anova.
-    #null model: biomass isn't related to any variable
-    fit.lme <- lme(biomass~+1, random=~+1|site, data=bc)
-    #linear mixed effect model
-    fit0.lme <- lme(biomass~meansummertemp, random=~+1|site, data=bc)
-    #linear mixed effect model with weighted variance. We have to account for heteroskedasticity
-    #(the   variance for all observations in each site is not the same)
-    fit1.lme <- lme(biomass~meansummertemp, random=~+1|site,
-                         weights = varIdent(form=~+1|site),data=bc)
-anova(fit.lme, fit0.lme, fit1.lme)
-#The improvement is significant.
 
 #Finally, we calculate the deltaAIC for each model and the AIC weights for each model.
 #ΔAIC - difference between the best AIC and AIC of the other models. 
 #Best model has a ΔAIC of zero, highest values for worst models.
 aictab(mods)
+
+#Alternatively we can compare the three models with anova.
+
+fit.lme <- lme(biomass~+1, random=~+1|site, data=bc)
+  
+fit0.lme <- lme(biomass~meansummertemp, random=~+1|site, data=bc)
+
+fit1.lme <- lme(biomass~meansummertemp, random=~+1|site, weights = varIdent(form=~+1|site), data=bc)
+
+anova(fit.lme, fit0.lme, fit1.lme)
+#The improvement is significant.
+
 ```
-We see from the output that fit1.lme has the smallest AIC number and is significantly improving the model.
+
+The model fit1.lme is the best option as it holds 99% of the cumulative model weight and has the lowest AIC(642.5004). The ΔAIC for the other two models are very high (\<10), which does not make them good options.
 
 -   Check the model's assumptions are met.
 
-```{r, message=FALSE}
+```{r  fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
 #Are the residuals well behaved?
 #Is the response variable a reasonably linear function of the fitted values?
 #Are the errors reasonably close to normally distributed?
+library(qqplotr)
+library(see)
+library(JWileymisc)
+
 performance::check_model(fit1.lme)
 ```
-The model looks ok!
+
+The model diagnostics look ok!
 
 -   Report key statistics from your model in a table or in the text.
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, message=FALSE}
+#look at the anova and summary output
 anova(fit1.lme, type="m")
 summary(fit1.lme)
+
+#get a small report of the model's statistics
+library(report)
+
 report::report(fit1.lme)
 ```
+
+Note that we only have 2 degrees of freedom for mean summer temperature. This is because we only have 4 independent observations of i.e. 4 sites. The F-value or the ratio of explained variance to unexplained variance by the model is 1.9, which is not very large. The p value (0.301) is the probability of obtaining an F value as extreme or more extreme as the one observed given that the null hypothesis is true. In our case the p value is in favor of the null hypothesis. Variance between sites is bigger than the residual variance or variance within sites) (19.34027 \> 18.45851). The beta values are the estimates of the fixed effects, so in this case it is 7.11. The std beta or [standardized beta coefficient](Stephanie Glen. "Standardized Beta Coefficient: Definition & Example" From StatisticsHowTo.com: Elementary Statistics for the rest of us! <https://www.statisticshowto.com/standardized-beta-coefficient/>) which is 0.48 in our case, means that with every increase of one standard deviation in mean summer temperature, biomass increases by 0.48 standard deviations.
 
 -   Make a publication quality plot that shows the relationship between biomass and mean summer temperature.
 
 ```{r}
+library(tidyverse)
 
 p1 <- ggplot(bc, aes( x=meansummertemp, y=biomass, colour=site, fill=site))+
       
@@ -186,11 +204,11 @@ p1 <- ggplot(bc, aes( x=meansummertemp, y=biomass, colour=site, fill=site))+
       
       ggtitle("Relationship between biomass and mean summer temperature in alpine grasslands")+
       
-      labs(x="Mean Summer Temperature (C°)", y="Biomass (g·m)", col="Site", fill="Site")+
+      labs(x="Mean Summer Air Temperature (C°)", y="Biomass", col="Site", fill="Site")+
       
-      theme_classic(base_size=16)+
+      theme_classic(base_size=14)+
       
-      theme(plot.title = element_text(hjust = 0.41, size=16),
+      theme(plot.title = element_text(hjust=0.299, size=14),
             
       axis.text.x = element_text(colour="black"), 
             
@@ -206,8 +224,20 @@ p1 <- ggplot(bc, aes( x=meansummertemp, y=biomass, colour=site, fill=site))+
 p1
 ```
 
+*Figure 1. Total plant biomass in alpine grasslands and mean summer air temperature in China, measured from four sites. The error bars on the boxplot represent the range from minimum to maximum values of total biomass measured per plot. The circle represents the mean of each group, and the horizontal line the median.*
+
 -   Write the statistical part of the methods and results sections of a manuscript describing the biomass-climate relationship. You should justify your choice of model.
 
 -   Write a biological interpretation of your final model.
+
+    -   According to the final model there is no significant effect of mean summer air temperature on the plant biomass. Despite the fact that we took several steps to choose the best fit model, it still does not practically describe the real situation for many different reasons.
+
+    -   First of all, the way the dataset is built is causing many problems, since we only have one value for the temperature per site, which means we can't see in any way whether and how the biomass is affected by temperature within each site, because we don't have any observations for temperature per plot as we have for biomass. Alternatively, if we didn't calculate the biomass per plot but only by site and then looked at the relationship between biomass and mean summer air temperature per site, we would have only 4 observations, which is not a good sample size to perform any statistical analysis.
+
+    -   From the above we can conclude , that even if there is an effect of mean summer air temperature on plant biomass in reality, there is no way we can find it let alone model it correctly with this type of data. What this data shows is that total biomass is different between the four sites but we have no clue whether it is because of the temperature or any other factor, which brings me to my next point.
+
+    -   According to the research question there are no other data about any other climatic factor that may have may have an important impact on the plant biomass. So, when interpreting a result like this would be like ignoring all other factors. There are several climatic components like humidity, altitude etc., that together with air temperature affect plant biomass.
+
+    -   Lastly, we can see that describing data in an aspect of significant and non-significant effects can completely misrepresent reality. In order to avoid such confusions, it is essential to have a strong experimental design, have a complete understanding of the research question and be aware of the power and weaknesses of different statistical analysis. Finally, this is a perfect example of reporting the actual findings based on the data and choosing to acknowledge the weaknesses of a method rather than trying to obtain a statistically significant result.(Wasserstein).
 
 # References
