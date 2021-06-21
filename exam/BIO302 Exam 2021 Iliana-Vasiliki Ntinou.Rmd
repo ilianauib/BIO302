@@ -44,11 +44,10 @@ Autocorrelation is a phenomenon where an observation of a variable is correlated
 #Download and import the climate data which are in csv format. 
 library(knitr)
 library(tidyverse)
-library(here)
 
 url = "https://osf.io/34qnr/download"
 download.file (url, "China_2013_2016_AirTemp_month.csv")
-climate.df <- read_csv(here("exam/China_2013_2016_AirTemp_month.csv"))
+climate.df <- read_csv("China_2013_2016_AirTemp_month.csv")
 
 
 #Download and import the biomass data which are in excel format. The biomass data can be attained from this https://osf.io/6sfqw/ url but it's best to download it manually and save it in the working folder so that all sheets are saved in the same file. 

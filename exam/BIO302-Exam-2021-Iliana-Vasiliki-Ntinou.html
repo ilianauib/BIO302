@@ -223,11 +223,10 @@ pre code {
 <pre class="r"><code>#Download and import the climate data which are in csv format. 
 library(knitr)
 library(tidyverse)
-library(here)
 
 url = &quot;https://osf.io/34qnr/download&quot;
 download.file (url, &quot;China_2013_2016_AirTemp_month.csv&quot;)
-climate.df &lt;- read_csv(here(&quot;exam/China_2013_2016_AirTemp_month.csv&quot;))
+climate.df &lt;- read_csv(&quot;China_2013_2016_AirTemp_month.csv&quot;)
 
 
 #Download and import the biomass data which are in excel format. The biomass data can be attained from this https://osf.io/6sfqw/ url but it&#39;s best to download it manually and save it in the working folder so that all sheets are saved in the same file. 
