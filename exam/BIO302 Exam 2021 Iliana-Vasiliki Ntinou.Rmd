@@ -13,9 +13,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Answers
 
+### 1) Discuss the advantages and challenges of pre-registering an experiment.
+
+Pre-registering an experiment refers to the concept of a data analysis of a research to be published prior to obtaining the results. This is beneficial for many reasons, especially since nowadays, we have seen examples of p-hacking, data mining, and in general manipulations that make research unreproducible (Reproducibility crisis Baker). To start, preregistration can limit publication bias towards more positive findings. It can prevent fishing and manipulations as mentioned above, and therefore the researcher can choose a model/analysis that is well reasoned based on theory before collecting the data. Furthermore, it can help balance the publication bias against null results. Lastly, pre-registering an  experiment can prevent third parties from pressuring for a certain result. On the other hand, preregistration comes with some challenges. For example, it is possible that something goes wrong in the procedure during the study, and pre-registration does not allow for diverting from what is already published. It is based on the concept of hypothesis testing, thus making pre reregistering an exploratory analysis challenging because the goal of exploration is to generate hypothesis and not test them. It is also possible that the data do not behave as you expected them to, or maybe the data you are using. Overall, preregistration contributes to increasing credibility and reproducibility (Nosek).
+
 ### 2) Discuss the steps you plan to use to make your thesis reproducible.
 
-The concept of reproducibility has been discussed more and more often the last decades, due to the fact that modern computational tools are evolving so rapidly(goodman). Reproducibility can be used as a weapon against research malpractice(baker). As a master student, I will be soon doing my own research so in order to make sure that it is reproducible I can plan ahead. Firstly, I need to make a robust study design, with a clear aim and methods. Having good quality of data is the key for a good analysis. Secondly, I can make sure that any manipulation of that raw data (cleaning, formatting), all statistical analysis and plotting is done with code in an integrated development environment like Rstudio, under a project where I save all my files, have control of the working directory, and easy access to history and environment. Lastly, I can use [guides](https://www.britishecologicalsociety.org/publications/guides-to/) to make my code reproducible and use a version control like GitHub so I can share my work with others.
+The concept of reproducibility has been discussed more and more often the last decades, due to the fact that modern computational tools are evolving so rapidly(goodman). Reproducibility can be used as a weapon against research malpractice(baker). As a master student, I will be soon doing my own research so in order to make sure that it is reproducible I can plan ahead. Firstly, I need to make a robust study design, with a clear aim and methods. Having good quality of data is the key for a good analysis. Secondly, I can make sure that any manipulation of that raw data (cleaning, formatting), all statistical analysis and plotting is done with code in an integrated development environment like Rstudio, under a project where I save all my files, have control of the working directory, and easy access to history and environment. Lastly, I can use [guides](https://www.britishecologicalsociety.org/publications/guides-to/) to make my code consistent and reproducible and use a version control like GitHub so I can share my work with others.
 
 ### 3) A statistical test has a p-value of 0.04. How should this p-value be interpreted? Is it good evidence against the null hypothesis?
 
@@ -24,11 +28,8 @@ The use of p-value in statistical testing is very common for determining the sig
 ### 4) A graduate student got this advice from their supervisor: "Just make a giant correlation matrix and see what is interesting". Discuss the potential problems with this approach and how they could be resolved.[@RN235]
 
 In this situation the student is doing an exploratory analysis. Their supervisor is advising him to try and find any potential important relationship considering all possible associations. This approach however, as much as attractive it may sound can be equally deceiving. There are very serious dangers that lurk behind multiple testing and lead to data dredging(davey smith):
-
--   There is high proneness for false discoveries (type I error). Since we have a giant correlation matrix, the number of tests that are going to be done in order to find significant results is also going to be very big. Therefore, we might end up with significant results that don't correspond to real significant result but were found by chance. For example, 5% of the correlations in a data set with randomly generated "covariates" will be significant by chance(Tenderick colquin).
-
--   Claiming significance when we are fishing for significance i.e. searching for interesting patterns then testing if they are statistically significant.
-
+  - There is high proneness for false discoveries (type I error). Since we have a giant correlation matrix, the number of tests that are going to be done in order to find significant results is also going to be very big. Therefore, we might end up with significant results that don't correspond to real significant result but were found by chance. For example, 5% of the correlations in a data set with randomly generated "covariates" will be significant by chance(Tenderick colquin).
+  - Claiming significance when we are fishing for significance i.e. searching for interesting patterns then testing if they are statistically significant.
 The best way to avoid these is to have a good study design in the first place or clearly state that the aim is generating and not testing hypothesis(Tendreneck). Other ways to correct for multiple testing is to p.adjust or use control criteria like FWER (probability that one or more significant covariates is actually spurious) or better FDR (expected proportion of significant results that are spurious).
 
 ### 5) Explain what autocorrelation is, how it can be detected and how its effect on regression can be controlled for.
@@ -242,16 +243,14 @@ p1
 
 -   Write the statistical part of the methods and results sections of a manuscript describing the biomass-climate relationship. You should justify your choice of model.
 
+
+
 -   Write a biological interpretation of your final model.
 
-    -   According to the final model there is no significant effect of mean summer air temperature on the plant biomass. Despite the fact that we took several steps to choose the best fit model, it still does not practically describe the real situation for many different reasons.
-
+    -   According to the final model there is no significant effect of mean summer air temperature on the plant biomass. Despite the fact that we took several steps to choose the best fit model, it still does not practically describe the real situation for many different reasons. In other words, a non-sig-nificant effect can refer to a list of things like a true null effect, a real underpowered effect,  or  an  obscure  effect (Makin).
     -   First of all, the way the dataset is built is causing many problems, since we only have one value for the temperature per site, which means we can't see in any way whether and how the biomass is affected by temperature within each site, because we don't have any observations for temperature per plot as we have for biomass. Alternatively, if we didn't calculate the biomass per plot but only by site and then looked at the relationship between biomass and mean summer air temperature per site, we would have only 4 observations, which is not a good sample size to perform any statistical analysis.
-
     -   From the above we can conclude , that even if there is an effect of mean summer air temperature on plant biomass in reality, there is no way we can find it let alone model it correctly with this type of data. What this data shows is that total biomass is different between the four sites but we have no clue whether it is because of the temperature or any other factor, which brings me to my next point.
-
     -   According to the research question there are no other data about any other climatic factor that may have may have an important impact on the plant biomass. So, when interpreting a result like this would be like ignoring all other factors. There are several climatic components like humidity, altitude etc., that together with air temperature affect plant biomass.
-
     -   Lastly, we can see that describing data in an aspect of significant and non-significant effects can completely misrepresent reality. In order to avoid such confusions, it is essential to have a strong experimental design, have a complete understanding of the research question and be aware of the power and weaknesses of different statistical analysis. Finally, this is a perfect example of reporting the actual findings based on the data and choosing to acknowledge the weaknesses of a method rather than trying to obtain a statistically significant result.(Wasserstein).
 
 # References
