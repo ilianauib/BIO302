@@ -243,6 +243,9 @@ p1
 
 -   Write the statistical part of the methods and results sections of a manuscript describing the biomass-climate relationship. You should justify your choice of model.
 
+**Data analysis**
+
+Total plant biomass per plot per site from 2015 and mean summer air temperature per site were calculated. A data matrix was produced to look for any strong association patterns between the different variables and help visualize the data. A linear mixed effect regression was chosen with response variable the biomass, fixed effect the mean summer air temperature and random effect the site. Three models were compared: a null model with no fixed effetcs, a linear mixed effect model and a weihted linear mixed effect model because of presence of heteroscedasticity in the data. Model selection was based on the Akaike’s Information Criterion(AIC). Out of the three options, the model with the lowest AIC score was selected, and the model's assumptions were checked by looking at the diagnostics plots.The data were presented in a boxplot. All analyses and plots were done in Rmarkdown using Rversion 4.1.0. The methodology and code for the analysis is available at GitHub()
 
 
 -   Write a biological interpretation of your final model.
