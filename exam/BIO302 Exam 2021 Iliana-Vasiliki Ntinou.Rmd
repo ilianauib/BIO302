@@ -41,6 +41,8 @@ Autocorrelation is a phenomenon where an observation of a variable is correlated
 -   Climate data can be downloaded from <https://osf.io/34qnr/>. Biomass data can be downloaded from <https://osf.io/6sfqw/>.
 
 ```{r, warning=FALSE, message=FALSE}
+#In order for the code to run it is necessary to have installed all the necessary packages: tidyverse, knitr, readxl, lubridate, GGally, nlme, AICcmodavg, qqplotr, see, JWileymisc, report.
+
 #Download and import the climate data which are in csv format. 
 library(knitr)
 library(tidyverse)
